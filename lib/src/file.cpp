@@ -2,85 +2,113 @@
 
 namespace mylib {
 
-// ===== СТЕК =====
-Stack::Stack(int capacity) : capacity_(capacity), size_(0) {
-    if (capacity <= 0) {
-        throw std::invalid_argument("Stack capacity must be positive");
-    }
-    data_ = new int[capacity];
+LinkedList::LinkedList() : head_(nullptr), size_(0) {}
+
+LinkedList::~LinkedList() {
+    clear();
 }
 
-Stack::~Stack() {
-    delete[] data_;
-}
-
-void Stack::push(int value) {
-    if (isFull()) {
-        throw std::runtime_error("Stack overflow");
-    }
-    data_[size_++] = value;
-}
-
-int Stack::pop() {
-    if (isEmpty()) {
-        throw std::runtime_error("Stack underflow");
-    }
-    return data_[--size_];
-}
-
-int Stack::peek() const {
-    if (isEmpty()) {
-        throw std::runtime_error("Stack is empty");
-    }
-    return data_[size_ - 1];
-}
-
-bool Stack::isEmpty() const { return size_ == 0; }
-bool Stack::isFull() const { return size_ == capacity_; }
-int Stack::size() const { return size_; }
-int Stack::capacity() const { return capacity_; }
-
-// ===== ОЧЕРЕДЬ (циклический буфер) =====
-Queue::Queue(int capacity) : capacity_(capacity), front_(0), rear_(0), size_(0) {
-    if (capacity <= 0) {
-        throw std::invalid_argument("Queue capacity must be positive");
-    }
-    data_ = new int[capacity];
-}
-
-Queue::~Queue() {
-    delete[] data_;
-}
-
-void Queue::enqueue(int value) {
-    if (isFull()) {
-        throw std::runtime_error("Queue overflow");
-    }
-    data_[rear_] = value;
-    rear_ = (rear_ + 1) % capacity_;
+void LinkedList::insertAtHead(int value) {
+    Node* newNode = new Node{value, head_};
+    head_ = newNode;
     size_++;
 }
 
-int Queue::dequeue() {
-    if (isEmpty()) {
-        throw std::runtime_error("Queue underflow");
+void LinkedList::insertAtTail(int value) {
+    Node* newNode = new Node{value, nullptr};
+    if (!head_) {
+        head_ = newNode;
+    } else {
+        Node* current = head_;
+        while (current->next) {
+            current = current->next;
+        }
+        current->next = newNode;
     }
-    int value = data_[front_];
-    front_ = (front_ + 1) % capacity_;
-    size_--;
-    return value;
+    size_++;
 }
 
-int Queue::front() const {
-    if (isEmpty()) {
-        throw std::runtime_error("Queue is empty");
+void LinkedList::insertAtIndex(int index, int value) {
+    if (index < 0 || index > size_) {
+        throw std::out_of_range("Index out of bounds");
     }
-    return data_[front_];
+    if (index == 0) {
+        insertAtHead(value);
+        return;
+    }
+
+    Node* current = head_;
+    for (int i = 0; i < index - 1; ++i) {
+        current = current->next;
+    }
+
+    Node* newNode = new Node{value, current->next};
+    current->next = newNode;
+    size_++;
 }
 
-bool Queue::isEmpty() const { return size_ == 0; }
-bool Queue::isFull() const { return size_ == capacity_; }
-int Queue::size() const { return size_; }
-int Queue::capacity() const { return capacity_; }
+bool LinkedList::removeByValue(int value) {
+    if (!head_) return false;
+
+    if (head_->data == value) {
+        Node* temp = head_;
+        head_ = head_->next;
+        delete temp;
+        size_--;
+        return true;
+    }
+
+    Node* current = head_;
+    while (current->next) {
+        if (current->next->data == value) {
+            Node* temp = current->next;
+            current->next = current->next->next;
+            delete temp;
+            size_--;
+            return true;
+        }
+        current = current->next;
+    }
+    return false;
+}
+
+int LinkedList::get(int index) const {
+    if (index < 0 || index >= size_) {
+        throw std::out_of_range("Index out of bounds");
+    }
+    Node* current = head_;
+    for (int i = 0; i < index; ++i) {
+        current = current->next;
+    }
+    return current->data;
+}
+
+int LinkedList::indexOf(int value) const {
+    Node* current = head_;
+    int index = 0;
+    while (current) {
+        if (current->data == value) {
+            return index;
+        }
+        current = current->next;
+        index++;
+    }
+    return -1;
+}
+
+int LinkedList::size() const {
+    return size_;
+}
+
+void LinkedList::clear() {
+    Node* current = head_;
+    while (current) {
+        Node* temp = current;
+        current = current->next;
+        delete temp;
+    }
+    head_ = nullptr;
+    size_ = 0;
+}
 
 } // namespace mylib

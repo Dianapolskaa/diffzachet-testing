@@ -3,59 +3,50 @@
 
 namespace mylib {
 
-// ===== СТЕК (LIFO) =====
-class Stack {
+class LinkedList {
 public:
-    // Конструктор с заданной ёмкостью. Бросает std::invalid_argument, если capacity <= 0.
-    explicit Stack(int capacity);
-     ~Stack();
+    LinkedList();
+    ~LinkedList();
 
-    // Добавить элемент. Бросает std::runtime_error, если стек полон.
-    void push(int value);
+    // Запрещаем копирование, чтобы не было двойного освобождения памяти
+    LinkedList(const LinkedList&) = delete;
+    LinkedList& operator=(const LinkedList&) = delete;
 
-    // Удалить и вернуть верхний элемент. Бросает std::runtime_error, если стек пуст.
-    int pop();
+    // Вставка в начало списка.
+    void insertAtHead(int value);
 
-    // Вернуть верхний элемент без удаления. Бросает std::runtime_error, если стек пуст.
-    int peek() const;
+    // Вставка в конец списка.
+    void insertAtTail(int value);
 
-    bool isEmpty() const;
-    bool isFull() const;
+    // Вставка по индексу. Индексы начинаются с 0.
+    // Бросает std::out_of_range, если index < 0 или index > size().
+    void insertAtIndex(int index, int value);
+
+    // Удаление первого вхождения значения.
+    // Возвращает true, если элемент был найден и удалён, false если не найден.
+    bool removeByValue(int value);
+
+    // Получение элемента по индексу.
+    // Бросает std::out_of_range, если index < 0 или index >= size().
+    int get(int index) const;
+
+    // Поиск индекса первого вхождения значения.
+    // Возвращает индекс или -1, если значение не найдено.
+    int indexOf(int value) const;
+
+    // Возвращает текущее количество элементов.
     int size() const;
-    int capacity() const;
+
+    // Полная очистка списка.
+    void clear();
 
 private:
-    int* data_;
-    int capacity_;
-    int size_;
-};
+    struct Node {
+        int data;
+        Node* next;
+    };
 
-// ===== ОЧЕРЕДЬ (FIFO) =====
-class Queue {
-public:
-    // Конструктор с заданной ёмкостью. Бросает std::invalid_argument, если capacity <= 0.
-    explicit Queue(int capacity);
-     ~Queue();
-
-    // Добавить элемент в конец. Бросает std::runtime_error, если очередь полна.
-    void enqueue(int value);
-
-    // Удалить и вернуть первый элемент. Бросает std::runtime_error, если очередь пуста.
-    int dequeue();
-
-    // Вернуть первый элемент без удаления. Бросает std::runtime_error, если очередь пуста.
-    int front() const;
-
-    bool isEmpty() const;
-    bool isFull() const;
-    int size() const;
-    int capacity() const;
-
-private:
-    int* data_;
-    int capacity_;
-    int front_;
-    int rear_;
+    Node* head_;
     int size_;
 };
 
