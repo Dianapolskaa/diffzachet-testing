@@ -1,175 +1,195 @@
 #include "file.h"
 #include <QtTest/QtTest>
-#include <stdexcept>
 
-class TestRational : public QObject
+class TestRoman : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // Конструктор и нормализация
-    void constructor_basic();
-    void constructor_negativeDenominator();
-    void constructor_zeroDenominator_throws();
-    void constructor_simplification();
+    // Позитивные: базовые конвертации
+    void intToRoman_singleDigit();
+    void intToRoman_teens();
+    void intToRoman_tens();
+    void intToRoman_hundreds();
+    void intToRoman_thousands();
 
-    // Арифметические операции
-    void add_basic();
-    void sub_basic();
-    void mul_basic();
-    void div_basic();
-    void div_byZero_throws();
+    // Позитивные: вычитающие комбинации
+    void intToRoman_subtractiveCombinations();
 
-    // Сравнение (параметризованный тест)
-    void compare_equal_data();
-    void compare_equal();
-    void compare_less();
+    // Границы диапазона
+    void intToRoman_minValue();
+    void intToRoman_maxValue();
 
-    // Строковое представление
-    void toString_properFraction();
-    void toString_improperFraction();
-    void toString_integer();
-    void toString_negative();
+    // Негативные: вне диапазона
+    void intToRoman_zero();
+    void intToRoman_negative();
+    void intToRoman_tooLarge();
 
-    // Параметризованный тест на операции
-    void arithmetic_data();
-    void arithmetic();
+    // Обратная конвертация
+    void romanToInt_basic();
+    void romanToInt_subtractive();
+    void romanToInt_complex();
+
+    // Негативные: невалидные строки
+    void romanToInt_emptyString();
+    void romanToInt_invalidCharacters();
+    void romanToInt_invalidSubtraction();
+
+    // Параметризованный тест: двусторонняя конвертация
+    void roundTrip_data();
+    void roundTrip();
+
+    // Проверка валидности
+    void isValidRoman_valid();
+    void isValidRoman_invalid();
 };
 
-// --- Конструктор ---
-void TestRational::constructor_basic() {
-    mylib::Rational r(1, 2);
-    QCOMPARE(r.numerator(), 1LL);
-    QCOMPARE(r.denominator(), 2LL);
+// --- intToRoman ---
+void TestRoman::intToRoman_singleDigit() {
+    QCOMPARE(mylib::intToRoman(1), std::string("I"));
+    QCOMPARE(mylib::intToRoman(3), std::string("III"));
+    QCOMPARE(mylib::intToRoman(5), std::string("V"));
 }
 
-void TestRational::constructor_negativeDenominator() {
-    mylib::Rational r(1, -2);
-    QCOMPARE(r.numerator(), -1LL);
-    QCOMPARE(r.denominator(), 2LL);
+void TestRoman::intToRoman_teens() {
+    QCOMPARE(mylib::intToRoman(4), std::string("IV"));
+    QCOMPARE(mylib::intToRoman(9), std::string("IX"));
+    QCOMPARE(mylib::intToRoman(14), std::string("XIV"));
 }
 
-void TestRational::constructor_zeroDenominator_throws() {
-    QVERIFY_EXCEPTION_THROWN(mylib::Rational(1, 0), std::invalid_argument);
+void TestRoman::intToRoman_tens() {
+    QCOMPARE(mylib::intToRoman(40), std::string("XL"));
+    QCOMPARE(mylib::intToRoman(90), std::string("XC"));
+    QCOMPARE(mylib::intToRoman(99), std::string("XCIX"));
 }
 
-void TestRational::constructor_simplification() {
-    mylib::Rational r(4, 8);
-    QCOMPARE(r.numerator(), 1LL);
-    QCOMPARE(r.denominator(), 2LL);
+void TestRoman::intToRoman_hundreds() {
+    QCOMPARE(mylib::intToRoman(400), std::string("CD"));
+    QCOMPARE(mylib::intToRoman(900), std::string("CM"));
+    QCOMPARE(mylib::intToRoman(999), std::string("CMXCIX"));
 }
 
-// --- Арифметика ---
-void TestRational::add_basic() {
-    mylib::Rational r1(1, 2);
-    mylib::Rational r2(1, 3);
-    mylib::Rational res = r1 + r2;
-    QCOMPARE(res.numerator(), 5LL);
-    QCOMPARE(res.denominator(), 6LL);
+void TestRoman::intToRoman_thousands() {
+    QCOMPARE(mylib::intToRoman(1000), std::string("M"));
+    QCOMPARE(mylib::intToRoman(3000), std::string("MMM"));
 }
 
-void TestRational::sub_basic() {
-    mylib::Rational r1(1, 2);
-    mylib::Rational r2(1, 3);
-    mylib::Rational res = r1 - r2;
-    QCOMPARE(res.numerator(), 1LL);
-    QCOMPARE(res.denominator(), 6LL);
+void TestRoman::intToRoman_subtractiveCombinations() {
+    QCOMPARE(mylib::intToRoman(4), std::string("IV"));
+    QCOMPARE(mylib::intToRoman(9), std::string("IX"));
+    QCOMPARE(mylib::intToRoman(40), std::string("XL"));
+    QCOMPARE(mylib::intToRoman(90), std::string("XC"));
+    QCOMPARE(mylib::intToRoman(400), std::string("CD"));
+    QCOMPARE(mylib::intToRoman(900), std::string("CM"));
 }
 
-void TestRational::mul_basic() {
-    mylib::Rational r1(1, 2);
-    mylib::Rational r2(2, 3);
-    mylib::Rational res = r1 * r2;
-    QCOMPARE(res.numerator(), 1LL);
-    QCOMPARE(res.denominator(), 3LL);
+void TestRoman::intToRoman_minValue() {
+    QCOMPARE(mylib::intToRoman(1), std::string("I"));
 }
 
-void TestRational::div_basic() {
-    mylib::Rational r1(1, 2);
-    mylib::Rational r2(2, 3);
-    mylib::Rational res = r1 / r2;
-    QCOMPARE(res.numerator(), 3LL);
-    QCOMPARE(res.denominator(), 4LL);
+void TestRoman::intToRoman_maxValue() {
+    QCOMPARE(mylib::intToRoman(3999), std::string("MMMCMXCIX"));
 }
 
-void TestRational::div_byZero_throws() {
-    mylib::Rational r1(1, 2);
-    mylib::Rational r2(0, 1);
-    QVERIFY_EXCEPTION_THROWN(r1 / r2, std::invalid_argument);
+void TestRoman::intToRoman_zero() {
+    QCOMPARE(mylib::intToRoman(0), std::string(""));
 }
 
-// --- Сравнение ---
-void TestRational::compare_equal_data() {
-    QTest::addColumn<long long>("n1");
-    QTest::addColumn<long long>("d1");
-    QTest::addColumn<long long>("n2");
-    QTest::addColumn<long long>("d2");
-
-    QTest::newRow("1/2 == 2/4") << 1LL << 2LL << 2LL << 4LL;
-    QTest::newRow("-1/2 == 1/-2") << -1LL << 2LL << 1LL << -2LL;
-    QTest::newRow("0/1 == 0/5") << 0LL << 1LL << 0LL << 5LL;
+void TestRoman::intToRoman_negative() {
+    QCOMPARE(mylib::intToRoman(-5), std::string(""));
 }
 
-void TestRational::compare_equal() {
-    QFETCH(long long, n1);
-    QFETCH(long long, d1);
-    QFETCH(long long, n2);
-    QFETCH(long long, d2);
-
-    QVERIFY(mylib::Rational(n1, d1) == mylib::Rational(n2, d2));
+void TestRoman::intToRoman_tooLarge() {
+    QCOMPARE(mylib::intToRoman(4000), std::string(""));
 }
 
-void TestRational::compare_less() {
-    QVERIFY(mylib::Rational(1, 3) < mylib::Rational(1, 2));
-    QVERIFY(mylib::Rational(-1, 2) < mylib::Rational(1, 2));
+// --- romanToInt ---
+void TestRoman::romanToInt_basic() {
+    QCOMPARE(mylib::romanToInt("I"), 1);
+    QCOMPARE(mylib::romanToInt("V"), 5);
+    QCOMPARE(mylib::romanToInt("X"), 10);
+    QCOMPARE(mylib::romanToInt("L"), 50);
+    QCOMPARE(mylib::romanToInt("C"), 100);
+    QCOMPARE(mylib::romanToInt("D"), 500);
+    QCOMPARE(mylib::romanToInt("M"), 1000);
 }
 
-// --- toString ---
-void TestRational::toString_properFraction() {
-    QCOMPARE(mylib::Rational(1, 2).toString(), std::string("1/2"));
+void TestRoman::romanToInt_subtractive() {
+    QCOMPARE(mylib::romanToInt("IV"), 4);
+    QCOMPARE(mylib::romanToInt("IX"), 9);
+    QCOMPARE(mylib::romanToInt("XL"), 40);
+    QCOMPARE(mylib::romanToInt("XC"), 90);
+    QCOMPARE(mylib::romanToInt("CD"), 400);
+    QCOMPARE(mylib::romanToInt("CM"), 900);
 }
 
-void TestRational::toString_improperFraction() {
-    QCOMPARE(mylib::Rational(5, 2).toString(), std::string("5/2"));
+void TestRoman::romanToInt_complex() {
+    QCOMPARE(mylib::romanToInt("XIV"), 14);
+    QCOMPARE(mylib::romanToInt("XCIX"), 99);
+    QCOMPARE(mylib::romanToInt("CMXCIX"), 999);
+    QCOMPARE(mylib::romanToInt("MMMCMXCIX"), 3999);
 }
 
-void TestRational::toString_integer() {
-    QCOMPARE(mylib::Rational(4, 2).toString(), std::string("2"));
+void TestRoman::romanToInt_emptyString() {
+    QCOMPARE(mylib::romanToInt(""), 0);
 }
 
-void TestRational::toString_negative() {
-    QCOMPARE(mylib::Rational(-1, 2).toString(), std::string("-1/2"));
+void TestRoman::romanToInt_invalidCharacters() {
+    QCOMPARE(mylib::romanToInt("ABC"), 0);
+    QCOMPARE(mylib::romanToInt("IIII"), 0); // Невалидно: 4 I подряд
 }
 
-// --- Параметризованный тест на операции ---
-void TestRational::arithmetic_data() {
-    QTest::addColumn<mylib::Rational>("a");
-    QTest::addColumn<mylib::Rational>("b");
-    QTest::addColumn<mylib::Rational>("sum");
-    QTest::addColumn<mylib::Rational>("diff");
-
-    QTest::newRow("simple")
-        << mylib::Rational(1, 4)
-        << mylib::Rational(1, 4)
-        << mylib::Rational(1, 2)
-        << mylib::Rational(0, 1);
-
-    QTest::newRow("different_denoms")
-        << mylib::Rational(2, 3)
-        << mylib::Rational(1, 6)
-        << mylib::Rational(5, 6)
-        << mylib::Rational(1, 2);
+void TestRoman::romanToInt_invalidSubtraction() {
+    QCOMPARE(mylib::romanToInt("IC"), 0); // Невалидно: I перед C
+    QCOMPARE(mylib::romanToInt("IL"), 0); // Невалидно: I перед L
 }
 
-void TestRational::arithmetic() {
-    QFETCH(mylib::Rational, a);
-    QFETCH(mylib::Rational, b);
-    QFETCH(mylib::Rational, sum);
-    QFETCH(mylib::Rational, diff);
+// --- Параметризованный тест ---
+void TestRoman::roundTrip_data() {
+    QTest::addColumn<int>("arabic");
+    QTest::addColumn<std::string>("roman");
 
-    QCOMPARE(a + b, sum);
-    QCOMPARE(a - b, diff);
+    QTest::newRow("1") << 1 << std::string("I");
+    QTest::newRow("4") << 4 << std::string("IV");
+    QTest::newRow("9") << 9 << std::string("IX");
+    QTest::newRow("14") << 14 << std::string("XIV");
+    QTest::newRow("40") << 40 << std::string("XL");
+    QTest::newRow("90") << 90 << std::string("XC");
+    QTest::newRow("99") << 99 << std::string("XCIX");
+    QTest::newRow("400") << 400 << std::string("CD");
+    QTest::newRow("900") << 900 << std::string("CM");
+    QTest::newRow("999") << 999 << std::string("CMXCIX");
+    QTest::newRow("3999") << 3999 << std::string("MMMCMXCIX");
 }
 
-QTEST_MAIN(TestRational)
+void TestRoman::roundTrip() {
+    QFETCH(int, arabic);
+    QFETCH(std::string, roman);
+
+    QCOMPARE(mylib::intToRoman(arabic), roman);
+    QCOMPARE(mylib::romanToInt(roman), arabic);
+}
+
+// --- isValidRoman ---
+void TestRoman::isValidRoman_valid() {
+    QVERIFY(mylib::isValidRoman("I"));
+    QVERIFY(mylib::isValidRoman("IV"));
+    QVERIFY(mylib::isValidRoman("IX"));
+    QVERIFY(mylib::isValidRoman("XL"));
+    QVERIFY(mylib::isValidRoman("XC"));
+    QVERIFY(mylib::isValidRoman("CD"));
+    QVERIFY(mylib::isValidRoman("CM"));
+    QVERIFY(mylib::isValidRoman("MMMCMXCIX"));
+}
+
+void TestRoman::isValidRoman_invalid() {
+    QVERIFY(!mylib::isValidRoman(""));
+    QVERIFY(!mylib::isValidRoman("IIII"));
+    QVERIFY(!mylib::isValidRoman("IC"));
+    QVERIFY(!mylib::isValidRoman("IL"));
+    QVERIFY(!mylib::isValidRoman("ABC"));
+    QVERIFY(!mylib::isValidRoman("VV"));
+}
+
+QTEST_MAIN(TestRoman)
 #include "test_file.moc"

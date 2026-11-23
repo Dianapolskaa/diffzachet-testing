@@ -1,40 +1,18 @@
 #pragma once
 #include <string>
-#include <stdexcept>
 
 namespace mylib {
 
-class Rational {
-public:
-    // Конструктор. Бросает std::invalid_argument, если denominator == 0.
-    // Знак дроби хранится в числителе, знаменатель всегда > 0. Дробь автоматически сокращается.
-    Rational(long long numerator = 0, long long denominator = 1);
+// Конвертация арабского числа (1-3999) в римское.
+// Если число вне диапазона, возвращает пустую строку.
+std::string intToRoman(int number);
 
-    long long numerator() const;
-    long long denominator() const;
+// Конвертация римского числа в арабское.
+// Если строка невалидна или результат вне диапазона 1-3999, возвращает 0.
+int romanToInt(const std::string& roman);
 
-    // Арифметические операции
-    Rational operator+(const Rational& other) const;
-    Rational operator-(const Rational& other) const;
-    Rational operator*(const Rational& other) const;
-    Rational operator/(const Rational& other) const; // Бросает std::invalid_argument, если other == 0
-
-    // Операции сравнения
-    bool operator==(const Rational& other) const;
-    bool operator!=(const Rational& other) const;
-    bool operator<(const Rational& other) const;
-    bool operator>(const Rational& other) const;
-    bool operator<=(const Rational& other) const;
-    bool operator>=(const Rational& other) const;
-
-    // Возвращает строковое представление: "a/b" или просто "a", если знаменатель равен 1.
-    std::string toString() const;
-
-private:
-    long long num_;
-    long long den_;
-    void normalize();
-    static long long gcd(long long a, long long b);
-};
+// Проверка валидности римского числа.
+// Возвращает true, если строка представляет корректное римское число в диапазоне 1-3999.
+bool isValidRoman(const std::string& roman);
 
 } // namespace mylib
