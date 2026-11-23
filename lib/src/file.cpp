@@ -1,92 +1,118 @@
 #include "file.h"
 #include <cmath>
-#include <algorithm>
 
 namespace mylib {
 
-// ===== ВЕКТОР 2D =====
-Vector2 add(const Vector2& a, const Vector2& b) {
-    return {a.x + b.x, a.y + b.y};
-}
-
-Vector2 sub(const Vector2& a, const Vector2& b) {
-    return {a.x - b.x, a.y - b.y};
-}
-
-double dot(const Vector2& a, const Vector2& b) {
-    return a.x * b.x + a.y * b.y;
-}
-
-double cross(const Vector2& a, const Vector2& b) {
-    return a.x * b.y - a.y * b.x;
-}
-
-double length(const Vector2& v) {
-    return std::sqrt(v.x * v.x + v.y * v.y);
-}
-
-Vector2 normalize(const Vector2& v) {
-    double len = length(v);
-    if (len == 0.0) {
-        throw std::invalid_argument("Cannot normalize zero vector");
+Matrix createMatrix(int rows, int cols) {
+    if (rows <= 0 || cols <= 0) {
+        throw std::invalid_argument("Matrix dimensions must be positive");
     }
-    return {v.x / len, v.y / len};
+    return Matrix(rows, std::vector<double>(cols, 0.0));
 }
 
-double angle(const Vector2& a, const Vector2& b) {
-    double lenA = length(a);
-    double lenB = length(b);
-    if (lenA == 0.0 || lenB == 0.0) {
-        throw std::invalid_argument("Cannot compute angle with zero vector");
+Matrix identityMatrix(int n) {
+    if (n <= 0) {
+        throw std::invalid_argument("Matrix dimension must be positive");
     }
-    double cosVal = dot(a, b) / (lenA * lenB);
-    // Защита от выхода за [-1, 1] из-за ошибок плавающей точки
-    cosVal = std::clamp(cosVal, -1.0, 1.0);
-    return std::acos(cosVal);
-}
-
-// ===== ВЕКТОР 3D =====
-Vector3 add(const Vector3& a, const Vector3& b) {
-    return {a.x + b.x, a.y + b.y, a.z + b.z};
-}
-
-Vector3 sub(const Vector3& a, const Vector3& b) {
-    return {a.x - b.x, a.y - b.y, a.z - b.z};
-}
-
-double dot(const Vector3& a, const Vector3& b) {
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-Vector3 cross(const Vector3& a, const Vector3& b) {
-    return {
-        a.y * b.z - a.z * b.y,
-        a.z * b.x - a.x * b.z,
-        a.x * b.y - a.y * b.x
-    };
-}
-
-double length(const Vector3& v) {
-    return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-}
-
-Vector3 normalize(const Vector3& v) {
-    double len = length(v);
-    if (len == 0.0) {
-        throw std::invalid_argument("Cannot normalize zero vector");
+    Matrix result(n, std::vector<double>(n, 0.0));
+    for (int i = 0; i < n; ++i) {
+        result[i][i] = 1.0;
     }
-    return {v.x / len, v.y / len, v.z / len};
+    return result;
 }
 
-double angle(const Vector3& a, const Vector3& b) {
-    double lenA = length(a);
-    double lenB = length(b);
-    if (lenA == 0.0 || lenB == 0.0) {
-        throw std::invalid_argument("Cannot compute angle with zero vector");
+Matrix add(const Matrix& a, const Matrix& b) {
+    if (rows(a) != rows(b) || cols(a) != cols(b)) {
+        throw std::invalid_argument("Matrix dimensions must match for addition");
     }
-    double cosVal = dot(a, b) / (lenA * lenB);
-    cosVal = std::clamp(cosVal, -1.0, 1.0);
-    return std::acos(cosVal);
+
+    int r = rows(a);
+    int c = cols(a);
+    Matrix result(r, std::vector<double>(c));
+
+    for (int i = 0; i < r; ++i) {
+        for (int j = 0; j < c; ++j) {
+            result[i][j] = a[i][j] + b[i][j];
+        }
+    }
+    return result;
+}
+
+Matrix multiply(const Matrix& a, const Matrix& b) {
+    if (cols(a) != rows(b)) {
+        throw std::invalid_argument("Matrix dimensions incompatible for multiplication");
+    }
+
+    int r = rows(a);
+    int c = cols(b);
+    int k = cols(a);
+    Matrix result(r, std::vector<double>(c, 0.0));
+
+    for (int i = 0; i < r; ++i) {
+        for (int j = 0; j < c; ++j) {
+            for (int p = 0; p < k; ++p) {
+                result[i][j] += a[i][p] * b[p][j];
+            }
+        }
+    }
+    return result;
+}
+
+Matrix transpose(const Matrix& m) {
+    int r = rows(m);
+    int c = cols(m);
+    Matrix result(c, std::vector<double>(r));
+
+    for (int i = 0; i < r; ++i) {
+        for (int j = 0; j < c; ++j) {
+            result[j][i] = m[i][j];
+        }
+    }
+    return result;
+}
+
+double determinant(const Matrix& m) {
+    int n = rows(m);
+    if (n != cols(m)) {
+        throw std::invalid_argument("Determinant requires square matrix");
+    }
+
+    // Базовые случаи
+    if (n == 1) {
+        return m[0][0];
+    }
+    if (n == 2) {
+        return m[0][0] * m[1][1] - m[0][1] * m[1][0];
+    }
+
+    // Рекурсивное вычисление через разложение по первой строке
+    double det = 0.0;
+    for (int j = 0; j < n; ++j) {
+        // Создаём минор (матрица без строки 0 и столбца j)
+        Matrix minor(n - 1, std::vector<double>(n - 1));
+        for (int i = 1; i < n; ++i) {
+            int col = 0;
+            for (int k = 0; k < n; ++k) {
+                if (k != j) {
+                    minor[i - 1][col] = m[i][k];
+                    col++;
+                }
+            }
+        }
+
+        double sign = (j % 2 == 0) ? 1.0 : -1.0;
+        det += sign * m[0][j] * determinant(minor);
+    }
+
+    return det;
+}
+
+int rows(const Matrix& m) {
+    return m.size();
+}
+
+int cols(const Matrix& m) {
+    return m.empty() ? 0 : m[0].size();
 }
 
 } // namespace mylib

@@ -1,57 +1,36 @@
 #pragma once
+#include <vector>
 #include <stdexcept>
 
 namespace mylib {
 
-// ===== ВЕКТОР 2D =====
-struct Vector2 {
-    double x = 0.0;
-    double y = 0.0;
-};
+using Matrix = std::vector<std::vector<double>>;
 
-// Сумма и разность векторов.
-Vector2 add(const Vector2& a, const Vector2& b);
-Vector2 sub(const Vector2& a, const Vector2& b);
+// Создание нулевой матрицы размера rows x cols.
+// Бросает std::invalid_argument, если rows <= 0 или cols <= 0.
+Matrix createMatrix(int rows, int cols);
 
-// Скалярное произведение.
-double dot(const Vector2& a, const Vector2& b);
+// Создание единичной матрицы размера n x n.
+// Бросает std::invalid_argument, если n <= 0.
+Matrix identityMatrix(int n);
 
-// Векторное произведение в 2D (z-компонента псевдовектора).
-// Положительно, если b лежит против часовой стрелки от a.
-double cross(const Vector2& a, const Vector2& b);
+// Сложение матриц.
+// Бросает std::invalid_argument, если размеры не совпадают.
+Matrix add(const Matrix& a, const Matrix& b);
 
-// Длина вектора.
-double length(const Vector2& v);
+// Умножение матриц.
+// Бросает std::invalid_argument, если количество столбцов a не равно количеству строк b.
+Matrix multiply(const Matrix& a, const Matrix& b);
 
-// Нормализация. Бросает std::invalid_argument, если вектор нулевой.
-Vector2 normalize(const Vector2& v);
+// Транспонирование матрицы.
+Matrix transpose(const Matrix& m);
 
-// Угол между векторами в радианах [0, pi].
-// Бросает std::invalid_argument, если хотя бы один вектор нулевой.
-double angle(const Vector2& a, const Vector2& b);
+// Вычисление определителя квадратной матрицы.
+// Бросает std::invalid_argument, если матрица не квадратная.
+double determinant(const Matrix& m);
 
-// ===== ВЕКТОР 3D =====
-struct Vector3 {
-    double x = 0.0;
-    double y = 0.0;
-    double z = 0.0;
-};
-
-Vector3 add(const Vector3& a, const Vector3& b);
-Vector3 sub(const Vector3& a, const Vector3& b);
-
-double dot(const Vector3& a, const Vector3& b);
-
-// Векторное произведение в 3D.
-Vector3 cross(const Vector3& a, const Vector3& b);
-
-double length(const Vector3& v);
-
-// Нормализация. Бросает std::invalid_argument, если вектор нулевой.
-Vector3 normalize(const Vector3& v);
-
-// Угол между векторами в радианах [0, pi].
-// Бросает std::invalid_argument, если хотя бы один вектор нулевой.
-double angle(const Vector3& a, const Vector3& b);
+// Получение размера матрицы.
+int rows(const Matrix& m);
+int cols(const Matrix& m);
 
 } // namespace mylib
