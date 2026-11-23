@@ -1,135 +1,175 @@
 #include "file.h"
 #include <QtTest/QtTest>
 #include <cmath>
-#include <stdexcept>
+#include <algorithm>
+#include <array>
 
-class TestCalculator : public QObject
+class TestQuadratic : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // Позитивные: базовые операции и приоритеты
-    void evaluate_basicAddition();
-    void evaluate_precedence();
-    void evaluate_parentheses();
-    void evaluate_unaryMinus();
-    void evaluate_unaryPlus();
-    void evaluate_floatingPoint();
+    // Квадратные уравнения (a != 0)
+    void solveQuadratic_twoDistinctRoots();
+    void solveQuadratic_oneRoot_Dzero();
+    void solveQuadratic_noRealRoots_Dnegative();
+    void solveQuadratic_cIsZero_oneRootIsZero();
+    void solveQuadratic_negativeA();
 
-    // Негативные: ошибки ввода
-    void evaluate_emptyString_throws();
-    void evaluate_whitespaceOnly_throws();
-    void evaluate_divisionByZero_throws();
-    void evaluate_invalidChars_throws();
-    void evaluate_unmatchedParenthesesOpen_throws();
-    void evaluate_unmatchedParenthesesClose_throws();
-    void evaluate_trailingChars_throws();
+    // Вырожденные случаи (a == 0)
+    void solveQuadratic_degenerate_linear_oneRoot();
+    void solveQuadratic_degenerate_constant_noRoots();
+    void solveQuadratic_degenerate_allZeros_infinite();
 
-    // Граничные случаи
-    void evaluate_deepNesting();
-    void evaluate_largeNumbers();
-    void evaluate_verySmallNumbers();
+    // Параметризованные тесты: квадратные уравнения
+    void solveQuadratic_paramQuad_data();
+    void solveQuadratic_paramQuad();
 
-    // Параметризованный тест: валидные выражения
-    void evaluate_parameterized_data();
-    void evaluate_parameterized();
+    // Параметризованные тесты: линейные уравнения
+    void solveQuadratic_paramLin_data();
+    void solveQuadratic_paramLin();
+
+    // Граничные случаи и точность
+    void solveQuadratic_largeCoefficients();
+    void solveQuadratic_smallCoefficients();
+    void solveQuadratic_rootsSorting();
 };
 
-// --- Позитивные ---
-void TestCalculator::evaluate_basicAddition() {
-    QCOMPARE(mylib::evaluateExpression("2 + 3"), 5.0);
+// --- Квадратные уравнения ---
+void TestQuadratic::solveQuadratic_twoDistinctRoots() {
+    double x1 = 0, x2 = 0;
+    mylib::RootCount count = mylib::solveQuadratic(1, -3, 2, x1, x2); // x^2 - 3x + 2 = 0
+    QCOMPARE(count, mylib::RootCount::Two);
+
+    std::array<double, 2> roots = {x1, x2};
+    std::sort(roots.begin(), roots.end());
+    QVERIFY(std::abs(roots[0] - 1.0) < 1e-9);
+    QVERIFY(std::abs(roots[1] - 2.0) < 1e-9);
 }
 
-void TestCalculator::evaluate_precedence() {
-    QCOMPARE(mylib::evaluateExpression("2 + 3 * 4"), 14.0);
-    QCOMPARE(mylib::evaluateExpression("10 - 2 * 3"), 4.0);
+void TestQuadratic::solveQuadratic_oneRoot_Dzero() {
+    double x1 = 0, x2 = 0;
+    mylib::RootCount count = mylib::solveQuadratic(1, -2, 1, x1, x2); // (x-1)^2 = 0
+    QCOMPARE(count, mylib::RootCount::One);
+    QVERIFY(std::abs(x1 - 1.0) < 1e-9);
 }
 
-void TestCalculator::evaluate_parentheses() {
-    QCOMPARE(mylib::evaluateExpression("(2 + 3) * 4"), 20.0);
-    QCOMPARE(mylib::evaluateExpression("((1 + 2) * (3 + 4))"), 21.0);
+void TestQuadratic::solveQuadratic_noRealRoots_Dnegative() {
+    double x1 = 0, x2 = 0;
+    mylib::RootCount count = mylib::solveQuadratic(1, 0, 1, x1, x2); // x^2 + 1 = 0
+    QCOMPARE(count, mylib::RootCount::None);
 }
 
-void TestCalculator::evaluate_unaryMinus() {
-    QCOMPARE(mylib::evaluateExpression("-5"), -5.0);
-    QCOMPARE(mylib::evaluateExpression("3 + -2"), 1.0);
-    QCOMPARE(mylib::evaluateExpression("-(-5)"), 5.0);
+void TestQuadratic::solveQuadratic_cIsZero_oneRootIsZero() {
+    double x1 = 0, x2 = 0;
+    mylib::RootCount count = mylib::solveQuadratic(1, -5, 0, x1, x2); // x^2 - 5x = 0
+    QCOMPARE(count, mylib::RootCount::Two);
+
+    std::array<double, 2> roots = {x1, x2};
+    std::sort(roots.begin(), roots.end());
+    QVERIFY(std::abs(roots[0] - 0.0) < 1e-9);
+    QVERIFY(std::abs(roots[1] - 5.0) < 1e-9);
 }
 
-void TestCalculator::evaluate_unaryPlus() {
-    QCOMPARE(mylib::evaluateExpression("+5"), 5.0);
-    QCOMPARE(mylib::evaluateExpression("3 + +2"), 5.0);
+void TestQuadratic::solveQuadratic_negativeA() {
+    double x1 = 0, x2 = 0;
+    mylib::RootCount count = mylib::solveQuadratic(-1, 0, 4, x1, x2); // -x^2 + 4 = 0
+    QCOMPARE(count, mylib::RootCount::Two);
+
+    std::array<double, 2> roots = {x1, x2};
+    std::sort(roots.begin(), roots.end());
+    QVERIFY(std::abs(roots[0] - (-2.0)) < 1e-9);
+    QVERIFY(std::abs(roots[1] - 2.0) < 1e-9);
 }
 
-void TestCalculator::evaluate_floatingPoint() {
-    double res = mylib::evaluateExpression("0.1 + 0.2");
-    QVERIFY(std::abs(res - 0.3) < 1e-9);
+// --- Вырожденные случаи ---
+void TestQuadratic::solveQuadratic_degenerate_linear_oneRoot() {
+    double x1 = 0, x2 = 0;
+    mylib::RootCount count = mylib::solveQuadratic(0, 2, -6, x1, x2); // 2x - 6 = 0
+    QCOMPARE(count, mylib::RootCount::One);
+    QVERIFY(std::abs(x1 - 3.0) < 1e-9);
 }
 
-// --- Негативные ---
-void TestCalculator::evaluate_emptyString_throws() {
-    QVERIFY_EXCEPTION_THROWN(mylib::evaluateExpression(""), std::invalid_argument);
+void TestQuadratic::solveQuadratic_degenerate_constant_noRoots() {
+    double x1 = 0, x2 = 0;
+    mylib::RootCount count = mylib::solveQuadratic(0, 0, 5, x1, x2); // 5 = 0
+    QCOMPARE(count, mylib::RootCount::None);
 }
 
-void TestCalculator::evaluate_whitespaceOnly_throws() {
-    QVERIFY_EXCEPTION_THROWN(mylib::evaluateExpression("   "), std::invalid_argument);
+void TestQuadratic::solveQuadratic_degenerate_allZeros_infinite() {
+    double x1 = 0, x2 = 0;
+    mylib::RootCount count = mylib::solveQuadratic(0, 0, 0, x1, x2); // 0 = 0
+    QCOMPARE(count, mylib::RootCount::Infinite);
 }
 
-void TestCalculator::evaluate_divisionByZero_throws() {
-    QVERIFY_EXCEPTION_THROWN(mylib::evaluateExpression("5 / 0"), std::invalid_argument);
-    QVERIFY_EXCEPTION_THROWN(mylib::evaluateExpression("5 / (2 - 2)"), std::invalid_argument);
+// --- Параметризованные тесты: квадратные ---
+void TestQuadratic::solveQuadratic_paramQuad_data() {
+    QTest::addColumn<double>("a");
+    QTest::addColumn<double>("b");
+    QTest::addColumn<double>("c");
+    QTest::addColumn<mylib::RootCount>("expectedCount");
+
+    QTest::newRow("x^2-4=0") << 1.0 << 0.0 << -4.0 << mylib::RootCount::Two;
+    QTest::newRow("2x^2+8x+8=0") << 2.0 << 8.0 << 8.0 << mylib::RootCount::One;
+    QTest::newRow("x^2+x+1=0") << 1.0 << 1.0 << 1.0 << mylib::RootCount::None;
 }
 
-void TestCalculator::evaluate_invalidChars_throws() {
-    QVERIFY_EXCEPTION_THROWN(mylib::evaluateExpression("2 + a"), std::invalid_argument);
-    QVERIFY_EXCEPTION_THROWN(mylib::evaluateExpression("2 * * 3"), std::invalid_argument);
+void TestQuadratic::solveQuadratic_paramQuad() {
+    QFETCH(double, a);
+    QFETCH(double, b);
+    QFETCH(double, c);
+    QFETCH(mylib::RootCount, expectedCount);
+
+    double x1 = 0, x2 = 0;
+    QCOMPARE(mylib::solveQuadratic(a, b, c, x1, x2), expectedCount);
 }
 
-void TestCalculator::evaluate_unmatchedParenthesesOpen_throws() {
-    QVERIFY_EXCEPTION_THROWN(mylib::evaluateExpression("(2 + 3"), std::invalid_argument);
+// --- Параметризованные тесты: линейные ---
+void TestQuadratic::solveQuadratic_paramLin_data() {
+    QTest::addColumn<double>("b");
+    QTest::addColumn<double>("c");
+    QTest::addColumn<mylib::RootCount>("expectedCount");
+
+    QTest::newRow("3x-9=0") << 3.0 << -9.0 << mylib::RootCount::One;
+    QTest::newRow("0x+5=0") << 0.0 << 5.0 << mylib::RootCount::None;
+    QTest::newRow("0x+0=0") << 0.0 << 0.0 << mylib::RootCount::Infinite;
 }
 
-void TestCalculator::evaluate_unmatchedParenthesesClose_throws() {
-    QVERIFY_EXCEPTION_THROWN(mylib::evaluateExpression("2 + 3)"), std::invalid_argument);
-}
+void TestQuadratic::solveQuadratic_paramLin() {
+    QFETCH(double, b);
+    QFETCH(double, c);
+    QFETCH(mylib::RootCount, expectedCount);
 
-void TestCalculator::evaluate_trailingChars_throws() {
-    QVERIFY_EXCEPTION_THROWN(mylib::evaluateExpression("2 + 2 abc"), std::invalid_argument);
+    double x1 = 0, x2 = 0;
+    QCOMPARE(mylib::solveQuadratic(0.0, b, c, x1, x2), expectedCount);
 }
 
 // --- Граничные случаи ---
-void TestCalculator::evaluate_deepNesting() {
-    QCOMPARE(mylib::evaluateExpression("((((1))))"), 1.0);
+void TestQuadratic::solveQuadratic_largeCoefficients() {
+    double x1 = 0, x2 = 0;
+    // x^2 - 2000000x + 1000000 = 0
+    mylib::RootCount count = mylib::solveQuadratic(1, -2000000, 1000000, x1, x2);
+    QCOMPARE(count, mylib::RootCount::Two);
+    QVERIFY(x1 != 0 || x2 != 0); // Просто проверяем, что не упало и корни есть
 }
 
-void TestCalculator::evaluate_largeNumbers() {
-    QCOMPARE(mylib::evaluateExpression("1000000 * 1000000"), 1000000000000.0);
+void TestQuadratic::solveQuadratic_smallCoefficients() {
+    double x1 = 0, x2 = 0;
+    // 0.0001x^2 + 0.0002x + 0.0001 = 0 -> D=0, x=-1
+    mylib::RootCount count = mylib::solveQuadratic(0.0001, 0.0002, 0.0001, x1, x2);
+    QCOMPARE(count, mylib::RootCount::One);
+    QVERIFY(std::abs(x1 - (-1.0)) < 1e-5);
 }
 
-void TestCalculator::evaluate_verySmallNumbers() {
-    double res = mylib::evaluateExpression("0.0001 * 0.0001");
-    QVERIFY(std::abs(res - 0.00000001) < 1e-12);
+void TestQuadratic::solveQuadratic_rootsSorting() {
+    double x1 = 0, x2 = 0;
+    // a < 0 меняет порядок корней в формуле, но сортировка в тесте это исправит
+    mylib::solveQuadratic(-1, 0, 9, x1, x2);
+    std::array<double, 2> roots = {x1, x2};
+    std::sort(roots.begin(), roots.end());
+    QVERIFY(std::abs(roots[0] - (-3.0)) < 1e-9);
+    QVERIFY(std::abs(roots[1] - 3.0) < 1e-9);
 }
 
-// --- Параметризованный тест ---
-void TestCalculator::evaluate_parameterized_data() {
-    QTest::addColumn<QString>("expr");
-    QTest::addColumn<double>("expected");
-
-    QTest::newRow("simple_sub") << "10 - 5" << 5.0;
-    QTest::newRow("mul_div") << "10 / 2 * 3" << 15.0;
-    QTest::newRow("complex") << "2 * (3 + 4) - 1" << 13.0;
-    QTest::newRow("unary_chain") << "---5" << -5.0;
-    QTest::newRow("decimal") << "2.5 * 2" << 5.0;
-}
-
-void TestCalculator::evaluate_parameterized() {
-    QFETCH(QString, expr);
-    QFETCH(double, expected);
-
-    double result = mylib::evaluateExpression(expr.toStdString());
-    QVERIFY(std::abs(result - expected) < 1e-9);
-}
-
-QTEST_MAIN(TestCalculator)
+QTEST_MAIN(TestQuadratic)
 #include "test_file.moc"
