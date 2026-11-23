@@ -1,227 +1,253 @@
 #include "file.h"
 #include <QtTest/QtTest>
+#include <stdexcept>
 
-class TestSorting : public QObject
+using mylib::Date;
+using mylib::DayOfWeek;
+
+static bool sameDate(const Date& a, const Date& b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+class TestCalendar : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // Пузырьковая
-    void bubbleSort_emptyArray();
-    void bubbleSort_singleElement();
-    void bubbleSort_alreadySorted();
-    void bubbleSort_reverseSorted();
-    void bubbleSort_withDuplicates();
-    void bubbleSort_ascending();
-    void bubbleSort_descending();
+    // isLeapYear
+    void isLeapYear_divisibleBy4();
+    void isLeapYear_divisibleBy100_notBy400();
+    void isLeapYear_divisibleBy400();
+    void isLeapYear_notDivisibleBy4();
+    void isLeapYear_parameterized_data();
+    void isLeapYear_parameterized();
 
-    // Вставками
-    void insertionSort_emptyArray();
-    void insertionSort_singleElement();
-    void insertionSort_alreadySorted();
-    void insertionSort_reverseSorted();
-    void insertionSort_withDuplicates();
-    void insertionSort_ascending();
-    void insertionSort_descending();
+    // daysInMonth
+    void daysInMonth_february_leap();
+    void daysInMonth_february_nonLeap();
+    void daysInMonth_30_and_31();
+    void daysInMonth_invalidMonth_throws();
+    void daysInMonth_parameterized_data();
+    void daysInMonth_parameterized();
 
-    // Слиянием
-    void mergeSort_emptyArray();
-    void mergeSort_singleElement();
-    void mergeSort_alreadySorted();
-    void mergeSort_reverseSorted();
-    void mergeSort_withDuplicates();
-    void mergeSort_ascending();
-    void mergeSort_descending();
+    // isValidDate
+    void isValidDate_valid();
+    void isValidDate_invalidMonth();
+    void isValidDate_invalidDay_feb29_nonLeap();
+    void isValidDate_feb29_leap_valid();
+    void isValidDate_zeroDay();
 
-    // Параметризованные
-    void bubbleSort_parameterized_data();
-    void bubbleSort_parameterized();
-    void insertionSort_parameterized_data();
-    void insertionSort_parameterized();
-    void mergeSort_parameterized_data();
-    void mergeSort_parameterized();
+    // nextDay (граничные переходы)
+    void nextDay_normal();
+    void nextDay_endOfMonth();
+    void nextDay_endOfFebruary_leap();
+    void nextDay_endOfFebruary_nonLeap();
+    void nextDay_endOfYear();
+    void nextDay_invalid_throws();
+
+    // daysBetween
+    void daysBetween_sameDate_zero();
+    void daysBetween_consecutiveDays();
+    void daysBetween_reverseOrder_negative();
+    void daysBetween_fullYear_nonLeap();
+    void daysBetween_fullYear_leap();
+    void daysBetween_invalid_throws();
+
+    // dayOfWeek (проверено на известных датах)
+    void dayOfWeek_2026_11_24_tuesday();
+    void dayOfWeek_2000_01_01_saturday();
+    void dayOfWeek_0001_01_01_monday();
+    void dayOfWeek_invalid_throws();
 };
 
-// ===== Пузырьковая сортировка =====
-void TestSorting::bubbleSort_emptyArray() {
-    std::vector<int> arr;
-    mylib::bubbleSort(arr, mylib::ascending);
-    QCOMPARE(arr.size(), 0u);
+// ===== isLeapYear =====
+void TestCalendar::isLeapYear_divisibleBy4() {
+    QVERIFY(mylib::isLeapYear(2024));
 }
 
-void TestSorting::bubbleSort_singleElement() {
-    std::vector<int> arr = {42};
-    mylib::bubbleSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{42}));
+void TestCalendar::isLeapYear_divisibleBy100_notBy400() {
+    QVERIFY(!mylib::isLeapYear(1900)); // Классическая ловушка!
+    QVERIFY(!mylib::isLeapYear(2100));
 }
 
-void TestSorting::bubbleSort_alreadySorted() {
-    std::vector<int> arr = {1, 2, 3, 4, 5};
-    mylib::bubbleSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{1, 2, 3, 4, 5}));
+void TestCalendar::isLeapYear_divisibleBy400() {
+    QVERIFY(mylib::isLeapYear(2000));
+    QVERIFY(mylib::isLeapYear(1600));
 }
 
-void TestSorting::bubbleSort_reverseSorted() {
-    std::vector<int> arr = {5, 4, 3, 2, 1};
-    mylib::bubbleSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{1, 2, 3, 4, 5}));
+void TestCalendar::isLeapYear_notDivisibleBy4() {
+    QVERIFY(!mylib::isLeapYear(2023));
 }
 
-void TestSorting::bubbleSort_withDuplicates() {
-    std::vector<int> arr = {3, 1, 2, 1, 3, 2};
-    mylib::bubbleSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{1, 1, 2, 2, 3, 3}));
+void TestCalendar::isLeapYear_parameterized_data() {
+    QTest::addColumn<int>("year");
+    QTest::addColumn<bool>("expected");
+
+    QTest::newRow("2024") << 2024 << true;
+    QTest::newRow("2023") << 2023 << false;
+    QTest::newRow("1900") << 1900 << false;
+    QTest::newRow("2000") << 2000 << true;
+    QTest::newRow("2100") << 2100 << false;
+    QTest::newRow("4")    << 4    << true;
 }
 
-void TestSorting::bubbleSort_ascending() {
-    std::vector<int> arr = {64, 34, 25, 12, 22, 11, 90};
-    mylib::bubbleSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{11, 12, 22, 25, 34, 64, 90}));
+void TestCalendar::isLeapYear_parameterized() {
+    QFETCH(int, year);
+    QFETCH(bool, expected);
+    QCOMPARE(mylib::isLeapYear(year), expected);
 }
 
-void TestSorting::bubbleSort_descending() {
-    std::vector<int> arr = {64, 34, 25, 12, 22, 11, 90};
-    mylib::bubbleSort(arr, mylib::descending);
-    QCOMPARE(arr, (std::vector<int>{90, 64, 34, 25, 22, 12, 11}));
+// ===== daysInMonth =====
+void TestCalendar::daysInMonth_february_leap() {
+    QCOMPARE(mylib::daysInMonth(2024, 2), 29);
+    QCOMPARE(mylib::daysInMonth(2000, 2), 29);
 }
 
-// ===== Сортировка вставками =====
-void TestSorting::insertionSort_emptyArray() {
-    std::vector<int> arr;
-    mylib::insertionSort(arr, mylib::ascending);
-    QCOMPARE(arr.size(), 0u);
+void TestCalendar::daysInMonth_february_nonLeap() {
+    QCOMPARE(mylib::daysInMonth(2023, 2), 28);
+    QCOMPARE(mylib::daysInMonth(1900, 2), 28); // 1900 не високосный!
 }
 
-void TestSorting::insertionSort_singleElement() {
-    std::vector<int> arr = {42};
-    mylib::insertionSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{42}));
+void TestCalendar::daysInMonth_30_and_31() {
+    QCOMPARE(mylib::daysInMonth(2026, 1), 31);
+    QCOMPARE(mylib::daysInMonth(2026, 4), 30);
+    QCOMPARE(mylib::daysInMonth(2026, 12), 31);
 }
 
-void TestSorting::insertionSort_alreadySorted() {
-    std::vector<int> arr = {1, 2, 3, 4, 5};
-    mylib::insertionSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{1, 2, 3, 4, 5}));
+void TestCalendar::daysInMonth_invalidMonth_throws() {
+    QVERIFY_EXCEPTION_THROWN(mylib::daysInMonth(2026, 0), std::invalid_argument);
+    QVERIFY_EXCEPTION_THROWN(mylib::daysInMonth(2026, 13), std::invalid_argument);
 }
 
-void TestSorting::insertionSort_reverseSorted() {
-    std::vector<int> arr = {5, 4, 3, 2, 1};
-    mylib::insertionSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{1, 2, 3, 4, 5}));
+void TestCalendar::daysInMonth_parameterized_data() {
+    QTest::addColumn<int>("year");
+    QTest::addColumn<int>("month");
+    QTest::addColumn<int>("expected");
+
+    QTest::newRow("feb_leap")    << 2024 << 2 << 29;
+    QTest::newRow("feb_nonleap") << 2023 << 2 << 28;
+    QTest::newRow("jan")         << 2026 << 1 << 31;
+    QTest::newRow("jun")         << 2026 << 6 << 30;
+    QTest::newRow("dec")         << 2026 << 12 << 31;
 }
 
-void TestSorting::insertionSort_withDuplicates() {
-    std::vector<int> arr = {3, 1, 2, 1, 3, 2};
-    mylib::insertionSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{1, 1, 2, 2, 3, 3}));
+void TestCalendar::daysInMonth_parameterized() {
+    QFETCH(int, year);
+    QFETCH(int, month);
+    QFETCH(int, expected);
+    QCOMPARE(mylib::daysInMonth(year, month), expected);
 }
 
-void TestSorting::insertionSort_ascending() {
-    std::vector<int> arr = {64, 34, 25, 12, 22, 11, 90};
-    mylib::insertionSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{11, 12, 22, 25, 34, 64, 90}));
+// ===== isValidDate =====
+void TestCalendar::isValidDate_valid() {
+    QVERIFY(mylib::isValidDate({2026, 11, 24}));
+    QVERIFY(mylib::isValidDate({2000, 2, 29}));
 }
 
-void TestSorting::insertionSort_descending() {
-    std::vector<int> arr = {64, 34, 25, 12, 22, 11, 90};
-    mylib::insertionSort(arr, mylib::descending);
-    QCOMPARE(arr, (std::vector<int>{90, 64, 34, 25, 22, 12, 11}));
+void TestCalendar::isValidDate_invalidMonth() {
+    QVERIFY(!mylib::isValidDate({2026, 13, 1}));
+    QVERIFY(!mylib::isValidDate({2026, 0, 1}));
 }
 
-// ===== Сортировка слиянием =====
-void TestSorting::mergeSort_emptyArray() {
-    std::vector<int> arr;
-    mylib::mergeSort(arr, mylib::ascending);
-    QCOMPARE(arr.size(), 0u);
+void TestCalendar::isValidDate_invalidDay_feb29_nonLeap() {
+    QVERIFY(!mylib::isValidDate({2023, 2, 29})); // 2023 не високосный
+    QVERIFY(!mylib::isValidDate({2026, 4, 31})); // В апреле 30 дней
 }
 
-void TestSorting::mergeSort_singleElement() {
-    std::vector<int> arr = {42};
-    mylib::mergeSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{42}));
+void TestCalendar::isValidDate_feb29_leap_valid() {
+    QVERIFY(mylib::isValidDate({2024, 2, 29}));
 }
 
-void TestSorting::mergeSort_alreadySorted() {
-    std::vector<int> arr = {1, 2, 3, 4, 5};
-    mylib::mergeSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{1, 2, 3, 4, 5}));
+void TestCalendar::isValidDate_zeroDay() {
+    QVERIFY(!mylib::isValidDate({2026, 1, 0}));
 }
 
-void TestSorting::mergeSort_reverseSorted() {
-    std::vector<int> arr = {5, 4, 3, 2, 1};
-    mylib::mergeSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{1, 2, 3, 4, 5}));
+// ===== nextDay =====
+void TestCalendar::nextDay_normal() {
+    auto res = mylib::nextDay({2026, 11, 24});
+    QVERIFY(sameDate(res, {2026, 11, 25}));
 }
 
-void TestSorting::mergeSort_withDuplicates() {
-    std::vector<int> arr = {3, 1, 2, 1, 3, 2};
-    mylib::mergeSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{1, 1, 2, 2, 3, 3}));
+void TestCalendar::nextDay_endOfMonth() {
+    auto res = mylib::nextDay({2026, 11, 30});
+    QVERIFY(sameDate(res, {2026, 12, 1}));
 }
 
-void TestSorting::mergeSort_ascending() {
-    std::vector<int> arr = {64, 34, 25, 12, 22, 11, 90};
-    mylib::mergeSort(arr, mylib::ascending);
-    QCOMPARE(arr, (std::vector<int>{11, 12, 22, 25, 34, 64, 90}));
+void TestCalendar::nextDay_endOfFebruary_leap() {
+    auto res = mylib::nextDay({2024, 2, 28});
+    QVERIFY(sameDate(res, {2024, 2, 29}));
+    auto res2 = mylib::nextDay({2024, 2, 29});
+    QVERIFY(sameDate(res2, {2024, 3, 1}));
 }
 
-void TestSorting::mergeSort_descending() {
-    std::vector<int> arr = {64, 34, 25, 12, 22, 11, 90};
-    mylib::mergeSort(arr, mylib::descending);
-    QCOMPARE(arr, (std::vector<int>{90, 64, 34, 25, 22, 12, 11}));
+void TestCalendar::nextDay_endOfFebruary_nonLeap() {
+    auto res = mylib::nextDay({2023, 2, 28});
+    QVERIFY(sameDate(res, {2023, 3, 1}));
 }
 
-// ===== Параметризованные тесты =====
-void TestSorting::bubbleSort_parameterized_data() {
-    QTest::addColumn<std::vector<int>>("input");
-    QTest::addColumn<std::vector<int>>("expected");
-
-    QTest::newRow("two_elements") << std::vector<int>{2, 1} << std::vector<int>{1, 2};
-    QTest::newRow("all_same") << std::vector<int>{5, 5, 5} << std::vector<int>{5, 5, 5};
-    QTest::newRow("negative_numbers") << std::vector<int>{-3, -1, -2} << std::vector<int>{-3, -2, -1};
+void TestCalendar::nextDay_endOfYear() {
+    auto res = mylib::nextDay({2026, 12, 31});
+    QVERIFY(sameDate(res, {2027, 1, 1}));
 }
 
-void TestSorting::bubbleSort_parameterized() {
-    QFETCH(std::vector<int>, input);
-    QFETCH(std::vector<int>, expected);
-
-    mylib::bubbleSort(input, mylib::ascending);
-    QCOMPARE(input, expected);
+void TestCalendar::nextDay_invalid_throws() {
+    QVERIFY_EXCEPTION_THROWN(mylib::nextDay({2026, 2, 30}), std::invalid_argument);
 }
 
-void TestSorting::insertionSort_parameterized_data() {
-    QTest::addColumn<std::vector<int>>("input");
-    QTest::addColumn<std::vector<int>>("expected");
-
-    QTest::newRow("two_elements") << std::vector<int>{2, 1} << std::vector<int>{1, 2};
-    QTest::newRow("all_same") << std::vector<int>{5, 5, 5} << std::vector<int>{5, 5, 5};
-    QTest::newRow("negative_numbers") << std::vector<int>{-3, -1, -2} << std::vector<int>{-3, -2, -1};
+// ===== daysBetween =====
+void TestCalendar::daysBetween_sameDate_zero() {
+    Date d{2026, 11, 24};
+    QCOMPARE(mylib::daysBetween(d, d), 0);
 }
 
-void TestSorting::insertionSort_parameterized() {
-    QFETCH(std::vector<int>, input);
-    QFETCH(std::vector<int>, expected);
-
-    mylib::insertionSort(input, mylib::ascending);
-    QCOMPARE(input, expected);
+void TestCalendar::daysBetween_consecutiveDays() {
+    QCOMPARE(mylib::daysBetween({2026, 11, 23}, {2026, 11, 24}), 1);
 }
 
-void TestSorting::mergeSort_parameterized_data() {
-    QTest::addColumn<std::vector<int>>("input");
-    QTest::addColumn<std::vector<int>>("expected");
-
-    QTest::newRow("two_elements") << std::vector<int>{2, 1} << std::vector<int>{1, 2};
-    QTest::newRow("all_same") << std::vector<int>{5, 5, 5} << std::vector<int>{5, 5, 5};
-    QTest::newRow("negative_numbers") << std::vector<int>{-3, -1, -2} << std::vector<int>{-3, -2, -1};
+void TestCalendar::daysBetween_reverseOrder_negative() {
+    QCOMPARE(mylib::daysBetween({2026, 11, 24}, {2026, 11, 23}), -1);
 }
 
-void TestSorting::mergeSort_parameterized() {
-    QFETCH(std::vector<int>, input);
-    QFETCH(std::vector<int>, expected);
-
-    mylib::mergeSort(input, mylib::ascending);
-    QCOMPARE(input, expected);
+void TestCalendar::daysBetween_fullYear_nonLeap() {
+    // 2026 не високосный: от 1 янв до 31 дек = 364 дня
+    QCOMPARE(mylib::daysBetween({2026, 1, 1}, {2026, 12, 31}), 364);
+    // От 1 янв 2026 до 1 янв 2027 = 365
+    QCOMPARE(mylib::daysBetween({2026, 1, 1}, {2027, 1, 1}), 365);
 }
 
-QTEST_MAIN(TestSorting)
+void TestCalendar::daysBetween_fullYear_leap() {
+    // 2024 високосный: от 1 янв 2024 до 1 янв 2025 = 366
+    QCOMPARE(mylib::daysBetween({2024, 1, 1}, {2025, 1, 1}), 366);
+    // Через 29 февраля
+    QCOMPARE(mylib::daysBetween({2024, 2, 28}, {2024, 3, 1}), 2);
+}
+
+void TestCalendar::daysBetween_invalid_throws() {
+    QVERIFY_EXCEPTION_THROWN(
+        mylib::daysBetween({2026, 13, 1}, {2026, 1, 1}), std::invalid_argument);
+    QVERIFY_EXCEPTION_THROWN(
+        mylib::daysBetween({2026, 1, 1}, {2026, 2, 30}), std::invalid_argument);
+}
+
+// ===== dayOfWeek =====
+void TestCalendar::dayOfWeek_2026_11_24_tuesday() {
+    QCOMPARE(static_cast<int>(mylib::dayOfWeek({2026, 11, 24})),
+             static_cast<int>(DayOfWeek::Tuesday));
+}
+
+void TestCalendar::dayOfWeek_2000_01_01_saturday() {
+    QCOMPARE(static_cast<int>(mylib::dayOfWeek({2000, 1, 1})),
+             static_cast<int>(DayOfWeek::Saturday));
+}
+
+void TestCalendar::dayOfWeek_0001_01_01_monday() {
+    QCOMPARE(static_cast<int>(mylib::dayOfWeek({1, 1, 1})),
+             static_cast<int>(DayOfWeek::Monday));
+}
+
+void TestCalendar::dayOfWeek_invalid_throws() {
+    QVERIFY_EXCEPTION_THROWN(mylib::dayOfWeek({2026, 4, 31}), std::invalid_argument);
+}
+
+QTEST_MAIN(TestCalendar)
 #include "test_file.moc"
