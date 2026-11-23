@@ -3,32 +3,40 @@
 namespace mylib {
 
 enum class WaterState {
-    Ice,        // Лёд (ниже 0°C)
-    Liquid,     // Жидкость (0°C до 100°C)
-    Steam       // Пар (выше 100°C)
+    Ice,        // Лёд (<= 0°C, точка замерзания)
+    Liquid,     // Жидкость (0°C < t < 100°C)
+    Steam       // Пар (>= 100°C, точка кипения)
 };
 
-// Перевод Цельсий → Фаренгейт
-// Формула: F = C * 9/5 + 32
+// ===== ТЕМПЕРАТУРА =====
+// Ошибочные ситуации: значения ниже абсолютного нуля (-273.15°C / 0K)
+// возвращают маркер -999.0.
 double celsiusToFahrenheit(double celsius);
-
-// Перевод Цельсий → Кельвин
-// Формула: K = C + 273.15
-// Если celsius < -273.15 (ниже абсолютного нуля), возвращает -999.0
 double celsiusToKelvin(double celsius);
-
-// Перевод Фаренгейт → Цельсий
-// Формула: C = (F - 32) * 5/9
 double fahrenheitToCelsius(double fahrenheit);
-
-// Перевод Кельвин → Цельсий
-// Формула: C = K - 273.15
-// Если kelvin < 0, возвращает -999.0
 double kelvinToCelsius(double kelvin);
-
-// Классификация состояния воды по температуре в Цельсиях.
-// Граничные условия задокументированы: 0°C считается льдом (точка замерзания),
-// 100°C — паром (точка кипения).
 WaterState classifyWaterState(double celsius);
+
+// ===== ДЛИНА (базовая единица — метр) =====
+// Ошибочные ситуации: отрицательные значения возвращают маркер -999.0.
+double mToKm(double m);
+double kmToM(double km);
+double mToMiles(double m);
+double milesToM(double miles);
+double mToFeet(double m);
+double feetToM(double feet);
+double mToInches(double m);
+double inchesToM(double inches);
+
+// ===== МАССА (базовая единица — килограмм) =====
+// Ошибочные ситуации: отрицательные значения возвращают маркер -999.0.
+double kgToG(double kg);
+double gToKg(double g);
+double kgToTons(double kg);
+double tonsToKg(double tons);
+double kgToPounds(double kg);
+double poundsToKg(double pounds);
+double kgToOunces(double kg);
+double ouncesToKg(double ounces);
 
 } // namespace mylib
