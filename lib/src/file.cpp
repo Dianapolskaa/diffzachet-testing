@@ -1,50 +1,97 @@
 #include "file.h"
+#include <cmath>
+#include <sstream>
+#include <iomanip>
 
 namespace mylib {
 
-Board emptyBoard() {
-    Board b;
-    b.fill(Player::None);
-    return b;
+Complex::Complex(double real, double imag) : real_(real), imag_(imag) {}
+
+double Complex::real() const { return real_; }
+double Complex::imag() const { return imag_; }
+
+Complex Complex::operator+(const Complex& other) const {
+    return Complex(real_ + other.real_, imag_ + other.imag_);
 }
 
-bool isValidMove(const Board& b, int pos) {
-    return pos >= 0 && pos < 9 && b[pos] == Player::None;
+Complex Complex::operator-(const Complex& other) const {
+    return Complex(real_ - other.real_, imag_ - other.imag_);
 }
 
-bool applyMove(Board& b, int pos, Player p) {
-    if (!isValidMove(b, pos) || p == Player::None) {
-        return false;
+Complex Complex::operator*(const Complex& other) const {
+    // (a+bi)(c+di) = (ac-bd) + (ad+bc)i
+    return Complex(
+        real_ * other.real_ - imag_ * other.imag_,
+        real_ * other.imag_ + imag_ * other.real_
+        );
+}
+
+Complex Complex::operator/(const Complex& other) const {
+    double denom = other.real_ * other.real_ + other.imag_ * other.imag_;
+    if (denom == 0.0) {
+        throw std::invalid_argument("Division by zero complex number");
     }
-    b[pos] = p;
-    return true;
+    // (a+bi)/(c+di) = (ac+bd)/(c²+d²) + (bc-ad)/(c²+d²)i
+    return Complex(
+        (real_ * other.real_ + imag_ * other.imag_) / denom,
+        (imag_ * other.real_ - real_ * other.imag_) / denom
+        );
 }
 
-namespace {
-bool checkLine(const Board& b, int a, int c, int d) {
-    return b[a] != Player::None && b[a] == b[c] && b[c] == b[d];
+bool Complex::operator==(const Complex& other) const {
+    return real_ == other.real_ && imag_ == other.imag_;
 }
-} // namespace
 
-Outcome evaluate(const Board& b) {
-    static const int lines[8][3] = {
-        {0, 1, 2}, {3, 4, 5}, {6, 7, 8}, // строки
-        {0, 3, 6}, {1, 4, 7}, {2, 5, 8}, // столбцы
-        {0, 4, 8}, {2, 4, 6}             // диагонали
-    };
+bool Complex::operator!=(const Complex& other) const {
+    return !(*this == other);
+}
 
-    for (const auto& l : lines) {
-        if (checkLine(b, l[0], l[1], l[2])) {
-            return b[l[0]] == Player::X ? Outcome::XWins : Outcome::OWins;
+Complex Complex::conjugate() const {
+    return Complex(real_, -imag_);
+}
+
+double Complex::modulus() const {
+    return std::sqrt(real_ * real_ + imag_ * imag_);
+}
+
+Complex Complex::power(int n) const {
+    if (n == 0) {
+        return Complex(1.0, 0.0); // z^0 = 1
+    }
+
+    if (n < 0) {
+        // z^(-n) = (1/z)^n
+        if (real_ == 0.0 && imag_ == 0.0) {
+            throw std::invalid_argument("Cannot raise zero to negative power");
         }
+        Complex inv = Complex(1.0, 0.0) / *this;
+        return inv.power(-n);
     }
 
-    for (Player c : b) {
-        if (c == Player::None) {
-            return Outcome::InProgress;
-        }
+    // Формула Муавра: z^n = r^n * (cos(n*θ) + i*sin(n*θ))
+    double r = modulus();
+    double theta = std::atan2(imag_, real_);
+
+    double rPow = std::pow(r, n);
+    return Complex(
+        rPow * std::cos(n * theta),
+        rPow * std::sin(n * theta)
+        );
+}
+
+std::string Complex::toString() const {
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(2);
+
+    if (imag_ == 0.0) {
+        oss << real_;
+    } else if (real_ == 0.0) {
+        oss << imag_ << "i";
+    } else {
+        oss << real_ << (imag_ > 0 ? "+" : "") << imag_ << "i";
     }
-    return Outcome::Draw;
+
+    return oss.str();
 }
 
 } // namespace mylib
