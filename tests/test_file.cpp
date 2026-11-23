@@ -2,182 +2,306 @@
 #include <QtTest/QtTest>
 #include <stdexcept>
 
-class TestLinkedList : public QObject
+class TestDynamicArray : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // Базовые операции и размер
-    void constructor_emptyList_sizeZero();
-    void insertAtHead_singleElement();
-    void insertAtTail_multipleElements();
-    void insertAtIndex_validPosition();
+    // Конструкторы и правило трёх
+    void constructor_default_capacity4();
+    void constructor_customCapacity();
+    void constructor_invalidCapacity_throws();
+    void copyConstructor_deepCopy();
+    void assignmentOperator_deepCopy();
+    void assignmentOperator_selfAssignment();
 
-    // Негативные: некорректные индексы
-    void insertAtIndex_negative_throws();
-    void insertAtIndex_tooLarge_throws();
+    // pushBack и popBack
+    void pushBack_basic();
+    void pushBack_autoResize();
+    void popBack_basic();
+    void popBack_empty_throws();
+    void popBack_shrinkCapacity();
+
+    // insertAt и removeAt
+    void insertAt_beginning();
+    void insertAt_end();
+    void insertAt_middle();
+    void insertAt_invalidIndex_throws();
+    void removeAt_beginning();
+    void removeAt_end();
+    void removeAt_middle();
+    void removeAt_invalidIndex_throws();
+
+    // get и set
+    void get_validIndex();
     void get_invalidIndex_throws();
+    void set_validIndex();
+    void set_invalidIndex_throws();
 
-    // Удаление и поиск
-    void removeByValue_exists_true();
-    void removeByValue_notExists_false();
-    void removeByValue_duplicates_removesFirst();
-    void removeByValue_headElement();
+    // indexOf и clear
     void indexOf_found();
     void indexOf_notFound();
+    void clear_resetsSize();
 
-    // Граничные случаи
-    void clear_nonEmptyList_becomesEmpty();
-    void insertAfterClear_works();
-
-    // Параметризованный тест
-    void insertAtIndex_parameterized_data();
-    void insertAtIndex_parameterized();
+    // Параметризованные тесты
+    void pushBack_parameterized_data();
+    void pushBack_parameterized();
 };
 
-// --- Базовые операции ---
-void TestLinkedList::constructor_emptyList_sizeZero() {
-    mylib::LinkedList list;
-    QCOMPARE(list.size(), 0);
+// --- Конструкторы и правило трёх ---
+void TestDynamicArray::constructor_default_capacity4() {
+    mylib::DynamicArray arr;
+    QCOMPARE(arr.size(), 0);
+    QCOMPARE(arr.capacity(), 4);
 }
 
-void TestLinkedList::insertAtHead_singleElement() {
-    mylib::LinkedList list;
-    list.insertAtHead(10);
-    QCOMPARE(list.size(), 1);
-    QCOMPARE(list.get(0), 10);
+void TestDynamicArray::constructor_customCapacity() {
+    mylib::DynamicArray arr(10);
+    QCOMPARE(arr.size(), 0);
+    QCOMPARE(arr.capacity(), 10);
 }
 
-void TestLinkedList::insertAtTail_multipleElements() {
-    mylib::LinkedList list;
-    list.insertAtTail(1);
-    list.insertAtTail(2);
-    list.insertAtTail(3);
-    QCOMPARE(list.get(0), 1);
-    QCOMPARE(list.get(2), 3);
+void TestDynamicArray::constructor_invalidCapacity_throws() {
+    QVERIFY_EXCEPTION_THROWN(mylib::DynamicArray(0), std::invalid_argument);
+    QVERIFY_EXCEPTION_THROWN(mylib::DynamicArray(-5), std::invalid_argument);
 }
 
-void TestLinkedList::insertAtIndex_validPosition() {
-    mylib::LinkedList list;
-    list.insertAtTail(1);
-    list.insertAtTail(3);
-    list.insertAtIndex(1, 2); // Вставляем между 1 и 3
-    QCOMPARE(list.get(1), 2);
-    QCOMPARE(list.size(), 3);
+void TestDynamicArray::copyConstructor_deepCopy() {
+    mylib::DynamicArray arr1;
+    arr1.pushBack(10);
+    arr1.pushBack(20);
+
+    mylib::DynamicArray arr2(arr1);
+    QCOMPARE(arr2.size(), 2);
+    QCOMPARE(arr2.get(0), 10);
+    QCOMPARE(arr2.get(1), 20);
+
+    // Изменяем arr1, arr2 не должен измениться
+    arr1.pushBack(30);
+    QCOMPARE(arr1.size(), 3);
+    QCOMPARE(arr2.size(), 2);
 }
 
-// --- Негативные ---
-void TestLinkedList::insertAtIndex_negative_throws() {
-    mylib::LinkedList list;
-    QVERIFY_EXCEPTION_THROWN(list.insertAtIndex(-1, 5), std::out_of_range);
+void TestDynamicArray::assignmentOperator_deepCopy() {
+    mylib::DynamicArray arr1;
+    arr1.pushBack(10);
+    arr1.pushBack(20);
+
+    mylib::DynamicArray arr2;
+    arr2 = arr1;
+    QCOMPARE(arr2.size(), 2);
+    QCOMPARE(arr2.get(0), 10);
+
+    arr1.pushBack(30);
+    QCOMPARE(arr1.size(), 3);
+    QCOMPARE(arr2.size(), 2);
 }
 
-void TestLinkedList::insertAtIndex_tooLarge_throws() {
-    mylib::LinkedList list;
-    list.insertAtTail(1);
-    QVERIFY_EXCEPTION_THROWN(list.insertAtIndex(5, 5), std::out_of_range);
+void TestDynamicArray::assignmentOperator_selfAssignment() {
+    mylib::DynamicArray arr;
+    arr.pushBack(10);
+    arr = arr; // Самоприсваивание не должно упасть
+    QCOMPARE(arr.size(), 1);
+    QCOMPARE(arr.get(0), 10);
 }
 
-void TestLinkedList::get_invalidIndex_throws() {
-    mylib::LinkedList list;
-    list.insertAtTail(10);
-    QVERIFY_EXCEPTION_THROWN(list.get(1), std::out_of_range);
-    QVERIFY_EXCEPTION_THROWN(list.get(-1), std::out_of_range);
+// --- pushBack и popBack ---
+void TestDynamicArray::pushBack_basic() {
+    mylib::DynamicArray arr;
+    arr.pushBack(10);
+    arr.pushBack(20);
+    QCOMPARE(arr.size(), 2);
+    QCOMPARE(arr.get(0), 10);
+    QCOMPARE(arr.get(1), 20);
 }
 
-// --- Удаление и поиск ---
-void TestLinkedList::removeByValue_exists_true() {
-    mylib::LinkedList list;
-    list.insertAtTail(10);
-    list.insertAtTail(20);
-    QVERIFY(list.removeByValue(10));
-    QCOMPARE(list.size(), 1);
-    QCOMPARE(list.get(0), 20);
+void TestDynamicArray::pushBack_autoResize() {
+    mylib::DynamicArray arr(2); // Ёмкость = 2
+    arr.pushBack(1);
+    arr.pushBack(2);
+    QCOMPARE(arr.capacity(), 2);
+    arr.pushBack(3); // Должно увеличить ёмкость до 4
+    QCOMPARE(arr.capacity(), 4);
+    QCOMPARE(arr.size(), 3);
 }
 
-void TestLinkedList::removeByValue_notExists_false() {
-    mylib::LinkedList list;
-    list.insertAtTail(10);
-    QVERIFY(!list.removeByValue(99));
-    QCOMPARE(list.size(), 1);
+void TestDynamicArray::popBack_basic() {
+    mylib::DynamicArray arr;
+    arr.pushBack(10);
+    arr.pushBack(20);
+    arr.popBack();
+    QCOMPARE(arr.size(), 1);
+    QCOMPARE(arr.get(0), 10);
 }
 
-void TestLinkedList::removeByValue_duplicates_removesFirst() {
-    mylib::LinkedList list;
-    list.insertAtTail(5);
-    list.insertAtTail(5);
-    list.insertAtTail(5);
-    list.removeByValue(5);
-    QCOMPARE(list.size(), 2);
-    QCOMPARE(list.get(0), 5); // Первый 5 удалён, но следующие остались
+void TestDynamicArray::popBack_empty_throws() {
+    mylib::DynamicArray arr;
+    QVERIFY_EXCEPTION_THROWN(arr.popBack(), std::runtime_error);
 }
 
-void TestLinkedList::removeByValue_headElement() {
-    mylib::LinkedList list;
-    list.insertAtHead(100);
-    list.insertAtHead(200);
-    list.removeByValue(200); // Удаляем голову
-    QCOMPARE(list.get(0), 100);
+void TestDynamicArray::popBack_shrinkCapacity() {
+    mylib::DynamicArray arr(4);
+    arr.pushBack(1);
+    arr.pushBack(2);
+    arr.pushBack(3);
+    arr.pushBack(4);
+    QCOMPARE(arr.capacity(), 4);
+
+    arr.popBack();
+    arr.popBack();
+    arr.popBack(); // size = 1, capacity = 4, 1 <= 4/4 = 1 -> shrink
+    QCOMPARE(arr.capacity(), 2);
 }
 
-void TestLinkedList::indexOf_found() {
-    mylib::LinkedList list;
-    list.insertAtTail(10);
-    list.insertAtTail(20);
-    QCOMPARE(list.indexOf(20), 1);
+// --- insertAt и removeAt ---
+void TestDynamicArray::insertAt_beginning() {
+    mylib::DynamicArray arr;
+    arr.pushBack(2);
+    arr.pushBack(3);
+    arr.insertAt(0, 1);
+    QCOMPARE(arr.get(0), 1);
+    QCOMPARE(arr.get(1), 2);
+    QCOMPARE(arr.get(2), 3);
 }
 
-void TestLinkedList::indexOf_notFound() {
-    mylib::LinkedList list;
-    list.insertAtTail(10);
-    QCOMPARE(list.indexOf(99), -1);
+void TestDynamicArray::insertAt_end() {
+    mylib::DynamicArray arr;
+    arr.pushBack(1);
+    arr.insertAt(1, 2);
+    QCOMPARE(arr.get(1), 2);
 }
 
-// --- Граничные случаи ---
-void TestLinkedList::clear_nonEmptyList_becomesEmpty() {
-    mylib::LinkedList list;
-    list.insertAtTail(1);
-    list.insertAtTail(2);
-    list.clear();
-    QCOMPARE(list.size(), 0);
+void TestDynamicArray::insertAt_middle() {
+    mylib::DynamicArray arr;
+    arr.pushBack(1);
+    arr.pushBack(3);
+    arr.insertAt(1, 2);
+    QCOMPARE(arr.get(1), 2);
 }
 
-void TestLinkedList::insertAfterClear_works() {
-    mylib::LinkedList list;
-    list.insertAtTail(1);
-    list.clear();
-    list.insertAtTail(2); // Не должно упасть
-    QCOMPARE(list.get(0), 2);
+void TestDynamicArray::insertAt_invalidIndex_throws() {
+    mylib::DynamicArray arr;
+    arr.pushBack(1);
+    QVERIFY_EXCEPTION_THROWN(arr.insertAt(-1, 5), std::out_of_range);
+    QVERIFY_EXCEPTION_THROWN(arr.insertAt(5, 5), std::out_of_range);
 }
 
-// --- Параметризованный тест ---
-void TestLinkedList::insertAtIndex_parameterized_data() {
-    QTest::addColumn<int>("initialSize");
-    QTest::addColumn<int>("insertIndex");
-    QTest::addColumn<int>("value");
+void TestDynamicArray::removeAt_beginning() {
+    mylib::DynamicArray arr;
+    arr.pushBack(1);
+    arr.pushBack(2);
+    arr.pushBack(3);
+    arr.removeAt(0);
+    QCOMPARE(arr.get(0), 2);
+    QCOMPARE(arr.size(), 2);
+}
+
+void TestDynamicArray::removeAt_end() {
+    mylib::DynamicArray arr;
+    arr.pushBack(1);
+    arr.pushBack(2);
+    arr.removeAt(1);
+    QCOMPARE(arr.size(), 1);
+}
+
+void TestDynamicArray::removeAt_middle() {
+    mylib::DynamicArray arr;
+    arr.pushBack(1);
+    arr.pushBack(2);
+    arr.pushBack(3);
+    arr.removeAt(1);
+    QCOMPARE(arr.get(1), 3);
+}
+
+void TestDynamicArray::removeAt_invalidIndex_throws() {
+    mylib::DynamicArray arr;
+    arr.pushBack(1);
+    QVERIFY_EXCEPTION_THROWN(arr.removeAt(-1), std::out_of_range);
+    QVERIFY_EXCEPTION_THROWN(arr.removeAt(1), std::out_of_range);
+}
+
+// --- get и set ---
+void TestDynamicArray::get_validIndex() {
+    mylib::DynamicArray arr;
+    arr.pushBack(42);
+    QCOMPARE(arr.get(0), 42);
+}
+
+void TestDynamicArray::get_invalidIndex_throws() {
+    mylib::DynamicArray arr;
+    arr.pushBack(1);
+    QVERIFY_EXCEPTION_THROWN(arr.get(-1), std::out_of_range);
+    QVERIFY_EXCEPTION_THROWN(arr.get(1), std::out_of_range);
+}
+
+void TestDynamicArray::set_validIndex() {
+    mylib::DynamicArray arr;
+    arr.pushBack(10);
+    arr.set(0, 20);
+    QCOMPARE(arr.get(0), 20);
+}
+
+void TestDynamicArray::set_invalidIndex_throws() {
+    mylib::DynamicArray arr;
+    arr.pushBack(1);
+    QVERIFY_EXCEPTION_THROWN(arr.set(-1, 5), std::out_of_range);
+    QVERIFY_EXCEPTION_THROWN(arr.set(1, 5), std::out_of_range);
+}
+
+// --- indexOf и clear ---
+void TestDynamicArray::indexOf_found() {
+    mylib::DynamicArray arr;
+    arr.pushBack(10);
+    arr.pushBack(20);
+    arr.pushBack(30);
+    QCOMPARE(arr.indexOf(20), 1);
+}
+
+void TestDynamicArray::indexOf_notFound() {
+    mylib::DynamicArray arr;
+    arr.pushBack(10);
+    QCOMPARE(arr.indexOf(99), -1);
+}
+
+void TestDynamicArray::clear_resetsSize() {
+    mylib::DynamicArray arr;
+    arr.pushBack(1);
+    arr.pushBack(2);
+    arr.clear();
+    QCOMPARE(arr.size(), 0);
+    QCOMPARE(arr.capacity(), 4); // Ёмкость не меняется
+}
+
+// --- Параметризованные тесты ---
+void TestDynamicArray::pushBack_parameterized_data() {
+    QTest::addColumn<int>("initialCapacity");
+    QTest::addColumn<QList<int>>("values");
     QTest::addColumn<int>("expectedSize");
+    QTest::addColumn<int>("expectedCapacity");
 
-    QTest::newRow("insert_at_0_empty") << 0 << 0 << 10 << 1;
-    QTest::newRow("insert_at_end") << 2 << 2 << 30 << 3;
-    QTest::newRow("insert_in_middle") << 3 << 1 << 99 << 4;
-    QTest::newRow("insert_at_0_nonEmpty") << 2 << 0 << 5 << 3;
+    QTest::newRow("small_array")
+        << 2 << QList<int>{1, 2, 3} << 3 << 4;
+
+    QTest::newRow("exact_capacity")
+        << 3 << QList<int>{10, 20, 30} << 3 << 3;
+
+    QTest::newRow("large_array")
+        << 1 << QList<int>{1, 2, 3, 4, 5} << 5 << 8;
 }
 
-void TestLinkedList::insertAtIndex_parameterized() {
-    QFETCH(int, initialSize);
-    QFETCH(int, insertIndex);
-    QFETCH(int, value);
+void TestDynamicArray::pushBack_parameterized() {
+    QFETCH(int, initialCapacity);
+    QFETCH(QList<int>, values);
     QFETCH(int, expectedSize);
+    QFETCH(int, expectedCapacity);
 
-    mylib::LinkedList list;
-    for (int i = 0; i < initialSize; ++i) {
-        list.insertAtTail(i);
+    mylib::DynamicArray arr(initialCapacity);
+    for (int v : values) {
+        arr.pushBack(v);
     }
-
-    list.insertAtIndex(insertIndex, value);
-    QCOMPARE(list.size(), expectedSize);
-    QCOMPARE(list.get(insertIndex), value);
+    QCOMPARE(arr.size(), expectedSize);
+    QCOMPARE(arr.capacity(), expectedCapacity);
 }
 
-QTEST_MAIN(TestLinkedList)
+QTEST_MAIN(TestDynamicArray)
 #include "test_file.moc"

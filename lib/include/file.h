@@ -3,51 +3,66 @@
 
 namespace mylib {
 
-class LinkedList {
+class DynamicArray {
 public:
-    LinkedList();
-    ~LinkedList();
+    // Конструктор по умолчанию. Начальная ёмкость = 4.
+    DynamicArray();
 
-    // Запрещаем копирование, чтобы не было двойного освобождения памяти
-    LinkedList(const LinkedList&) = delete;
-    LinkedList& operator=(const LinkedList&) = delete;
+    // Конструктор с заданной начальной ёмкостью.
+    // Бросает std::invalid_argument, если capacity <= 0.
+    explicit DynamicArray(int capacity);
 
-    // Вставка в начало списка.
-    void insertAtHead(int value);
+    // Конструктор копирования (правило трёх).
+    DynamicArray(const DynamicArray& other);
 
-    // Вставка в конец списка.
-    void insertAtTail(int value);
+    // Оператор присваивания (правило трёх).
+    DynamicArray& operator=(const DynamicArray& other);
 
-    // Вставка по индексу. Индексы начинаются с 0.
+    // Деструктор (правило трёх).
+    ~DynamicArray();
+
+    // Добавить элемент в конец. При переполнении ёмкость увеличивается в 2 раза.
+    void pushBack(int value);
+
+    // Удалить последний элемент.
+    // Бросает std::runtime_error, если массив пуст.
+    void popBack();
+
+    // Вставить элемент по индексу. Элементы справа сдвигаются.
     // Бросает std::out_of_range, если index < 0 или index > size().
-    void insertAtIndex(int index, int value);
+    void insertAt(int index, int value);
 
-    // Удаление первого вхождения значения.
-    // Возвращает true, если элемент был найден и удалён, false если не найден.
-    bool removeByValue(int value);
+    // Удалить элемент по индексу. Элементы справа сдвигаются влево.
+    // Бросает std::out_of_range, если index < 0 или index >= size().
+    void removeAt(int index);
 
-    // Получение элемента по индексу.
+    // Получить элемент по индексу.
     // Бросает std::out_of_range, если index < 0 или index >= size().
     int get(int index) const;
 
-    // Поиск индекса первого вхождения значения.
-    // Возвращает индекс или -1, если значение не найдено.
+    // Установить элемент по индексу.
+    // Бросает std::out_of_range, если index < 0 или index >= size().
+    void set(int index, int value);
+
+    // Найти индекс первого вхождения значения. Возвращает -1, если не найдено.
     int indexOf(int value) const;
 
-    // Возвращает текущее количество элементов.
+    // Текущее количество элементов.
     int size() const;
 
-    // Полная очистка списка.
+    // Текущая ёмкость (сколько элементов можно добавить без перераспределения).
+    int capacity() const;
+
+    // Полная очистка массива (size = 0, capacity не меняется).
     void clear();
 
 private:
-    struct Node {
-        int data;
-        Node* next;
-    };
-
-    Node* head_;
+    int* data_;
     int size_;
+    int capacity_;
+
+    // Вспомогательный метод для перераспределения памяти.
+    void resize(int newCapacity);
 };
 
 } // namespace mylib
