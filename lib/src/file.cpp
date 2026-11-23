@@ -1,50 +1,92 @@
 #include "file.h"
+#include <cmath>
 
 namespace mylib {
 
-// ===== ТЕМПЕРАТУРА =====
-double celsiusToFahrenheit(double celsius) {
-    return celsius * 9.0 / 5.0 + 32.0;
+long long Rational::gcd(long long a, long long b) {
+    a = std::abs(a);
+    b = std::abs(b);
+    while (b != 0) {
+        long long t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
 }
 
-double celsiusToKelvin(double celsius) {
-    if (celsius < -273.15) return -999.0;
-    return celsius + 273.15;
+void Rational::normalize() {
+    if (den_ == 0) {
+        throw std::invalid_argument("Denominator cannot be zero");
+    }
+    // Переносим знак в числитель
+    if (den_ < 0) {
+        num_ = -num_;
+        den_ = -den_;
+    }
+    // Сокращаем дробь
+    long long g = gcd(std::abs(num_), den_);
+    if (g > 0) {
+        num_ /= g;
+        den_ /= g;
+    }
 }
 
-double fahrenheitToCelsius(double fahrenheit) {
-    return (fahrenheit - 32.0) * 5.0 / 9.0;
+Rational::Rational(long long numerator, long long denominator)
+    : num_(numerator), den_(denominator) {
+    normalize();
 }
 
-double kelvinToCelsius(double kelvin) {
-    if (kelvin < 0.0) return -999.0;
-    return kelvin - 273.15;
+long long Rational::numerator() const { return num_; }
+long long Rational::denominator() const { return den_; }
+
+Rational Rational::operator+(const Rational& other) const {
+    return Rational(num_ * other.den_ + other.num_ * den_, den_ * other.den_);
 }
 
-WaterState classifyWaterState(double celsius) {
-    if (celsius <= 0.0) return WaterState::Ice;
-    if (celsius < 100.0) return WaterState::Liquid;
-    return WaterState::Steam;
+Rational Rational::operator-(const Rational& other) const {
+    return Rational(num_ * other.den_ - other.num_ * den_, den_ * other.den_);
 }
 
-// ===== ДЛИНА =====
-double mToKm(double m)    { return m < 0.0 ? -999.0 : m / 1000.0; }
-double kmToM(double km)   { return km < 0.0 ? -999.0 : km * 1000.0; }
-double mToMiles(double m) { return m < 0.0 ? -999.0 : m / 1609.344; }
-double milesToM(double mi){ return mi < 0.0 ? -999.0 : mi * 1609.344; }
-double mToFeet(double m)  { return m < 0.0 ? -999.0 : m / 0.3048; }
-double feetToM(double ft) { return ft < 0.0 ? -999.0 : ft * 0.3048; }
-double mToInches(double m){ return m < 0.0 ? -999.0 : m / 0.0254; }
-double inchesToM(double in){ return in < 0.0 ? -999.0 : in * 0.0254; }
+Rational Rational::operator*(const Rational& other) const {
+    return Rational(num_ * other.num_, den_ * other.den_);
+}
 
-// ===== МАССА =====
-double kgToG(double kg)     { return kg < 0.0 ? -999.0 : kg * 1000.0; }
-double gToKg(double g)      { return g < 0.0 ? -999.0 : g / 1000.0; }
-double kgToTons(double kg)  { return kg < 0.0 ? -999.0 : kg / 1000.0; }
-double tonsToKg(double t)   { return t < 0.0 ? -999.0 : t * 1000.0; }
-double kgToPounds(double kg){ return kg < 0.0 ? -999.0 : kg / 0.45359237; }
-double poundsToKg(double lb){ return lb < 0.0 ? -999.0 : lb * 0.45359237; }
-double kgToOunces(double kg){ return kg < 0.0 ? -999.0 : kg / 0.028349523125; }
-double ouncesToKg(double oz){ return oz < 0.0 ? -999.0 : oz * 0.028349523125; }
+Rational Rational::operator/(const Rational& other) const {
+    if (other.num_ == 0) {
+        throw std::invalid_argument("Division by zero rational number");
+    }
+    return Rational(num_ * other.den_, den_ * other.num_);
+}
+
+bool Rational::operator==(const Rational& other) const {
+    return num_ == other.num_ && den_ == other.den_;
+}
+
+bool Rational::operator!=(const Rational& other) const {
+    return !(*this == other);
+}
+
+bool Rational::operator<(const Rational& other) const {
+    return num_ * other.den_ < other.num_ * den_;
+}
+
+bool Rational::operator>(const Rational& other) const {
+    return other < *this;
+}
+
+bool Rational::operator<=(const Rational& other) const {
+    return !(other < *this);
+}
+
+bool Rational::operator>=(const Rational& other) const {
+    return !(*this < other);
+}
+
+std::string Rational::toString() const {
+    if (den_ == 1) {
+        return std::to_string(num_);
+    }
+    return std::to_string(num_) + "/" + std::to_string(den_);
+}
 
 } // namespace mylib

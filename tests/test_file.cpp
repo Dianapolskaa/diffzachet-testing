@@ -1,185 +1,175 @@
 #include "file.h"
 #include <QtTest/QtTest>
-#include <cmath>
+#include <stdexcept>
 
-class TestConverter20 : public QObject
+class TestRational : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // --- Температура: позитивные и негативные ---
-    void celsiusToFahrenheit_freezingPoint();
-    void celsiusToFahrenheit_boilingPoint();
-    void celsiusToKelvin_absoluteZero();
-    void celsiusToKelvin_belowAbsoluteZero_returnsMarker();
-    void classifyWaterState_data();
-    void classifyWaterState();
+    // Конструктор и нормализация
+    void constructor_basic();
+    void constructor_negativeDenominator();
+    void constructor_zeroDenominator_throws();
+    void constructor_simplification();
 
-    // --- Длина: позитивные ---
-    void mToKm_basic();
-    void mToMiles_basic();
-    void mToFeet_basic();
-    void mToInches_basic();
+    // Арифметические операции
+    void add_basic();
+    void sub_basic();
+    void mul_basic();
+    void div_basic();
+    void div_byZero_throws();
 
-    // --- Длина: негативные и граничные ---
-    void length_negativeInput_returnsMarker();
-    void length_zero_returnsZero();
+    // Сравнение (параметризованный тест)
+    void compare_equal_data();
+    void compare_equal();
+    void compare_less();
 
-    // --- Масса: позитивные ---
-    void kgToG_basic();
-    void kgToTons_basic();
-    void kgToPounds_basic();
+    // Строковое представление
+    void toString_properFraction();
+    void toString_improperFraction();
+    void toString_integer();
+    void toString_negative();
 
-    // --- Масса: негативные ---
-    void mass_negativeInput_returnsMarker();
-
-    // --- Цепочка конвертаций (обратимость) ---
-    void roundTrip_length_data();
-    void roundTrip_length();
-    void roundTrip_mass_data();
-    void roundTrip_mass();
-    void roundTrip_temperature_celsiusToFahrenheit();
+    // Параметризованный тест на операции
+    void arithmetic_data();
+    void arithmetic();
 };
 
-// ===== ТЕМПЕРАТУРА =====
-void TestConverter20::celsiusToFahrenheit_freezingPoint() {
-    QCOMPARE(mylib::celsiusToFahrenheit(0.0), 32.0);
+// --- Конструктор ---
+void TestRational::constructor_basic() {
+    mylib::Rational r(1, 2);
+    QCOMPARE(r.numerator(), 1LL);
+    QCOMPARE(r.denominator(), 2LL);
 }
 
-void TestConverter20::celsiusToFahrenheit_boilingPoint() {
-    QCOMPARE(mylib::celsiusToFahrenheit(100.0), 212.0);
+void TestRational::constructor_negativeDenominator() {
+    mylib::Rational r(1, -2);
+    QCOMPARE(r.numerator(), -1LL);
+    QCOMPARE(r.denominator(), 2LL);
 }
 
-void TestConverter20::celsiusToKelvin_absoluteZero() {
-    QCOMPARE(mylib::celsiusToKelvin(-273.15), 0.0);
+void TestRational::constructor_zeroDenominator_throws() {
+    QVERIFY_EXCEPTION_THROWN(mylib::Rational(1, 0), std::invalid_argument);
 }
 
-void TestConverter20::celsiusToKelvin_belowAbsoluteZero_returnsMarker() {
-    QCOMPARE(mylib::celsiusToKelvin(-300.0), -999.0);
+void TestRational::constructor_simplification() {
+    mylib::Rational r(4, 8);
+    QCOMPARE(r.numerator(), 1LL);
+    QCOMPARE(r.denominator(), 2LL);
 }
 
-void TestConverter20::classifyWaterState_data() {
-    QTest::addColumn<double>("celsius");
-    QTest::addColumn<mylib::WaterState>("expected");
-
-    QTest::newRow("ice_-10")   << -10.0 << mylib::WaterState::Ice;
-    QTest::newRow("ice_0")     << 0.0   << mylib::WaterState::Ice;
-    QTest::newRow("liquid_25") << 25.0  << mylib::WaterState::Liquid;
-    QTest::newRow("liquid_99") << 99.9  << mylib::WaterState::Liquid;
-    QTest::newRow("steam_100") << 100.0 << mylib::WaterState::Steam;
-    QTest::newRow("steam_150") << 150.0 << mylib::WaterState::Steam;
+// --- Арифметика ---
+void TestRational::add_basic() {
+    mylib::Rational r1(1, 2);
+    mylib::Rational r2(1, 3);
+    mylib::Rational res = r1 + r2;
+    QCOMPARE(res.numerator(), 5LL);
+    QCOMPARE(res.denominator(), 6LL);
 }
 
-void TestConverter20::classifyWaterState() {
-    QFETCH(double, celsius);
-    QFETCH(mylib::WaterState, expected);
-    QCOMPARE(mylib::classifyWaterState(celsius), expected);
+void TestRational::sub_basic() {
+    mylib::Rational r1(1, 2);
+    mylib::Rational r2(1, 3);
+    mylib::Rational res = r1 - r2;
+    QCOMPARE(res.numerator(), 1LL);
+    QCOMPARE(res.denominator(), 6LL);
 }
 
-// ===== ДЛИНА =====
-void TestConverter20::mToKm_basic() {
-    QCOMPARE(mylib::mToKm(1000.0), 1.0);
+void TestRational::mul_basic() {
+    mylib::Rational r1(1, 2);
+    mylib::Rational r2(2, 3);
+    mylib::Rational res = r1 * r2;
+    QCOMPARE(res.numerator(), 1LL);
+    QCOMPARE(res.denominator(), 3LL);
 }
 
-void TestConverter20::mToMiles_basic() {
-    double r = mylib::mToMiles(1609.344);
-    QVERIFY(std::abs(r - 1.0) < 1e-9);
+void TestRational::div_basic() {
+    mylib::Rational r1(1, 2);
+    mylib::Rational r2(2, 3);
+    mylib::Rational res = r1 / r2;
+    QCOMPARE(res.numerator(), 3LL);
+    QCOMPARE(res.denominator(), 4LL);
 }
 
-void TestConverter20::mToFeet_basic() {
-    double r = mylib::mToFeet(0.3048);
-    QVERIFY(std::abs(r - 1.0) < 1e-9);
+void TestRational::div_byZero_throws() {
+    mylib::Rational r1(1, 2);
+    mylib::Rational r2(0, 1);
+    QVERIFY_EXCEPTION_THROWN(r1 / r2, std::invalid_argument);
 }
 
-void TestConverter20::mToInches_basic() {
-    double r = mylib::mToInches(0.0254);
-    QVERIFY(std::abs(r - 1.0) < 1e-9);
+// --- Сравнение ---
+void TestRational::compare_equal_data() {
+    QTest::addColumn<long long>("n1");
+    QTest::addColumn<long long>("d1");
+    QTest::addColumn<long long>("n2");
+    QTest::addColumn<long long>("d2");
+
+    QTest::newRow("1/2 == 2/4") << 1LL << 2LL << 2LL << 4LL;
+    QTest::newRow("-1/2 == 1/-2") << -1LL << 2LL << 1LL << -2LL;
+    QTest::newRow("0/1 == 0/5") << 0LL << 1LL << 0LL << 5LL;
 }
 
-void TestConverter20::length_negativeInput_returnsMarker() {
-    QCOMPARE(mylib::mToKm(-5.0), -999.0);
-    QCOMPARE(mylib::mToMiles(-1.0), -999.0);
-    QCOMPARE(mylib::feetToM(-10.0), -999.0);
+void TestRational::compare_equal() {
+    QFETCH(long long, n1);
+    QFETCH(long long, d1);
+    QFETCH(long long, n2);
+    QFETCH(long long, d2);
+
+    QVERIFY(mylib::Rational(n1, d1) == mylib::Rational(n2, d2));
 }
 
-void TestConverter20::length_zero_returnsZero() {
-    QCOMPARE(mylib::mToKm(0.0), 0.0);
-    QCOMPARE(mylib::mToMiles(0.0), 0.0);
+void TestRational::compare_less() {
+    QVERIFY(mylib::Rational(1, 3) < mylib::Rational(1, 2));
+    QVERIFY(mylib::Rational(-1, 2) < mylib::Rational(1, 2));
 }
 
-// ===== МАССА =====
-void TestConverter20::kgToG_basic() {
-    QCOMPARE(mylib::kgToG(1.0), 1000.0);
+// --- toString ---
+void TestRational::toString_properFraction() {
+    QCOMPARE(mylib::Rational(1, 2).toString(), std::string("1/2"));
 }
 
-void TestConverter20::kgToTons_basic() {
-    QCOMPARE(mylib::kgToTons(1000.0), 1.0);
+void TestRational::toString_improperFraction() {
+    QCOMPARE(mylib::Rational(5, 2).toString(), std::string("5/2"));
 }
 
-void TestConverter20::kgToPounds_basic() {
-    double r = mylib::kgToPounds(0.45359237);
-    QVERIFY(std::abs(r - 1.0) < 1e-9);
+void TestRational::toString_integer() {
+    QCOMPARE(mylib::Rational(4, 2).toString(), std::string("2"));
 }
 
-void TestConverter20::mass_negativeInput_returnsMarker() {
-    QCOMPARE(mylib::kgToG(-1.0), -999.0);
-    QCOMPARE(mylib::tonsToKg(-5.0), -999.0);
+void TestRational::toString_negative() {
+    QCOMPARE(mylib::Rational(-1, 2).toString(), std::string("-1/2"));
 }
 
-// ===== ЦЕПОЧКА КОНВЕРТАЦИЙ (ОБРАТИМОСТЬ) =====
-void TestConverter20::roundTrip_length_data() {
-    QTest::addColumn<double>("value");
-    QTest::addColumn<double>("eps");
-    QTest::addColumn<QString>("unit");
+// --- Параметризованный тест на операции ---
+void TestRational::arithmetic_data() {
+    QTest::addColumn<mylib::Rational>("a");
+    QTest::addColumn<mylib::Rational>("b");
+    QTest::addColumn<mylib::Rational>("sum");
+    QTest::addColumn<mylib::Rational>("diff");
 
-    QTest::newRow("m_km")    << 1234.5   << 1e-6 << "km";
-    QTest::newRow("m_miles") << 5000.0   << 1e-6 << "miles";
-    QTest::newRow("m_feet")  << 100.0    << 1e-6 << "feet";
-    QTest::newRow("m_inches")<< 3.5      << 1e-6 << "inches";
+    QTest::newRow("simple")
+        << mylib::Rational(1, 4)
+        << mylib::Rational(1, 4)
+        << mylib::Rational(1, 2)
+        << mylib::Rational(0, 1);
+
+    QTest::newRow("different_denoms")
+        << mylib::Rational(2, 3)
+        << mylib::Rational(1, 6)
+        << mylib::Rational(5, 6)
+        << mylib::Rational(1, 2);
 }
 
-void TestConverter20::roundTrip_length() {
-    QFETCH(double, value);
-    QFETCH(double, eps);
-    QFETCH(QString, unit);
+void TestRational::arithmetic() {
+    QFETCH(mylib::Rational, a);
+    QFETCH(mylib::Rational, b);
+    QFETCH(mylib::Rational, sum);
+    QFETCH(mylib::Rational, diff);
 
-    double back;
-    if (unit == "km")     back = mylib::kmToM(mylib::mToKm(value));
-    else if (unit == "miles") back = mylib::milesToM(mylib::mToMiles(value));
-    else if (unit == "feet")  back = mylib::feetToM(mylib::mToFeet(value));
-    else                      back = mylib::inchesToM(mylib::mToInches(value));
-
-    QVERIFY(std::abs(back - value) < eps);
+    QCOMPARE(a + b, sum);
+    QCOMPARE(a - b, diff);
 }
 
-void TestConverter20::roundTrip_mass_data() {
-    QTest::addColumn<double>("value");
-    QTest::addColumn<QString>("unit");
-
-    QTest::newRow("kg_g")      << 2.5   << "g";
-    QTest::newRow("kg_tons")   << 1500.0 << "tons";
-    QTest::newRow("kg_pounds") << 10.0  << "pounds";
-    QTest::newRow("kg_ounces") << 3.0   << "ounces";
-}
-
-void TestConverter20::roundTrip_mass() {
-    QFETCH(double, value);
-    QFETCH(QString, unit);
-
-    double back;
-    if (unit == "g")         back = mylib::gToKg(mylib::kgToG(value));
-    else if (unit == "tons")   back = mylib::tonsToKg(mylib::kgToTons(value));
-    else if (unit == "pounds") back = mylib::poundsToKg(mylib::kgToPounds(value));
-    else                       back = mylib::ouncesToKg(mylib::kgToOunces(value));
-
-    QVERIFY(std::abs(back - value) < 1e-6);
-}
-
-void TestConverter20::roundTrip_temperature_celsiusToFahrenheit() {
-    double c = 25.0;
-    double back = mylib::fahrenheitToCelsius(mylib::celsiusToFahrenheit(c));
-    QVERIFY(std::abs(back - c) < 1e-9);
-}
-
-QTEST_MAIN(TestConverter20)
+QTEST_MAIN(TestRational)
 #include "test_file.moc"

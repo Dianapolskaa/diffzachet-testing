@@ -1,42 +1,40 @@
 #pragma once
+#include <string>
+#include <stdexcept>
 
 namespace mylib {
 
-enum class WaterState {
-    Ice,        // Лёд (<= 0°C, точка замерзания)
-    Liquid,     // Жидкость (0°C < t < 100°C)
-    Steam       // Пар (>= 100°C, точка кипения)
+class Rational {
+public:
+    // Конструктор. Бросает std::invalid_argument, если denominator == 0.
+    // Знак дроби хранится в числителе, знаменатель всегда > 0. Дробь автоматически сокращается.
+    Rational(long long numerator = 0, long long denominator = 1);
+
+    long long numerator() const;
+    long long denominator() const;
+
+    // Арифметические операции
+    Rational operator+(const Rational& other) const;
+    Rational operator-(const Rational& other) const;
+    Rational operator*(const Rational& other) const;
+    Rational operator/(const Rational& other) const; // Бросает std::invalid_argument, если other == 0
+
+    // Операции сравнения
+    bool operator==(const Rational& other) const;
+    bool operator!=(const Rational& other) const;
+    bool operator<(const Rational& other) const;
+    bool operator>(const Rational& other) const;
+    bool operator<=(const Rational& other) const;
+    bool operator>=(const Rational& other) const;
+
+    // Возвращает строковое представление: "a/b" или просто "a", если знаменатель равен 1.
+    std::string toString() const;
+
+private:
+    long long num_;
+    long long den_;
+    void normalize();
+    static long long gcd(long long a, long long b);
 };
-
-// ===== ТЕМПЕРАТУРА =====
-// Ошибочные ситуации: значения ниже абсолютного нуля (-273.15°C / 0K)
-// возвращают маркер -999.0.
-double celsiusToFahrenheit(double celsius);
-double celsiusToKelvin(double celsius);
-double fahrenheitToCelsius(double fahrenheit);
-double kelvinToCelsius(double kelvin);
-WaterState classifyWaterState(double celsius);
-
-// ===== ДЛИНА (базовая единица — метр) =====
-// Ошибочные ситуации: отрицательные значения возвращают маркер -999.0.
-double mToKm(double m);
-double kmToM(double km);
-double mToMiles(double m);
-double milesToM(double miles);
-double mToFeet(double m);
-double feetToM(double feet);
-double mToInches(double m);
-double inchesToM(double inches);
-
-// ===== МАССА (базовая единица — килограмм) =====
-// Ошибочные ситуации: отрицательные значения возвращают маркер -999.0.
-double kgToG(double kg);
-double gToKg(double g);
-double kgToTons(double kg);
-double tonsToKg(double tons);
-double kgToPounds(double kg);
-double poundsToKg(double pounds);
-double kgToOunces(double kg);
-double ouncesToKg(double ounces);
 
 } // namespace mylib
