@@ -1,51 +1,37 @@
 #pragma once
 #include <string>
-#include <vector>
-#include <stdexcept>
 
 namespace mylib {
 
-// Структура для записи в историю операций
-struct Transaction {
-    std::string type; // "DEPOSIT", "WITHDRAW", "INTEREST"
-    double amount;
-};
+// Проверка корректности email.
+// Правила:
+// - Ровно один символ '@'.
+// - Локальная часть (до @) непустая, содержит только буквы, цифры, '.', '_', '-', '+'.
+// - Доменная часть (после @) содержит хотя бы одну точку.
+// - Домен не начинается и не заканчивается точкой/дефисом.
+// - Домен содержит хотя бы одну букву после последней точки.
+bool isValidEmail(const std::string& email);
 
-class BankAccount {
-public:
-    // Конструктор. Бросает std::invalid_argument, если initialBalance < 0 или interestRate < 0.
-    explicit BankAccount(double initialBalance = 0.0, double interestRate = 0.0);
+// Проверка корректности телефона (российский формат).
+// Правила:
+// - Допускаются символы: цифры, '+', '(', ')', '-', ' ', пробелы.
+// - После удаления всех нецифровых символов остаётся 10 или 11 цифр.
+// - Если 11 цифр, первая должна быть '7' или '8'.
+// - Если 10 цифр, считается номером без кода страны (допускается).
+bool isValidPhone(const std::string& phone);
 
-    double getBalance() const;
-    double getInterestRate() const;
+// Проверка надёжности пароля.
+// Правила:
+// - Длина не менее 8 символов.
+// - Содержит хотя бы одну букву (a-z, A-Z).
+// - Содержит хотя бы одну цифру (0-9).
+// - Содержит хотя бы один спецсимвол (!@#$%^&*()_+-=[]{}|;:'",.<>?/~`).
+bool isValidPassword(const std::string& password);
 
-    // Изменение процентной ставки. Бросает std::invalid_argument, если rate < 0.
-    void setInterestRate(double rate);
-
-    // Пополнение счёта. Бросает std::invalid_argument, если amount <= 0.
-    void deposit(double amount);
-
-    // Снятие со счёта.
-    // Бросает std::invalid_argument, если amount <= 0.
-    // Бросает std::runtime_error, если amount > balance (недостаточно средств).
-    void withdraw(double amount);
-
-    // Начисление процентов за заданное количество периодов.
-    // Формула: balance += balance * interestRate * periods.
-    // Бросает std::invalid_argument, если periods <= 0.
-    // Если начисленные проценты > 0, они добавляются в баланс и историю.
-    void applyInterest(int periods);
-
-    // Проверка достаточности средств.
-    bool hasSufficientFunds(double amount) const;
-
-    // Возвращает константную ссылку на историю операций.
-    const std::vector<Transaction>& getHistory() const;
-
-private:
-    double balance_;
-    double interestRate_;
-    std::vector<Transaction> history_;
-};
+// Проверка корректности возраста.
+// Правила:
+// - Возраст должен быть в диапазоне [0, 150].
+// - Отрицательные значения и значения > 150 считаются некорректными.
+bool isValidAge(int age);
 
 } // namespace mylib
