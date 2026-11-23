@@ -1,39 +1,66 @@
 #include "file.h"
-#include <cmath>
+#include <algorithm>
+#include <cctype>
 
 namespace mylib {
 
-RootCount solveQuadratic(double a, double b, double c, double& x1, double& x2) {
-    const double eps = 1e-9;
+size_t stringLength(const std::string& s) {
+    return s.length();
+}
 
-    // Вырожденный случай: a == 0 (линейное уравнение или константа)
-    if (std::abs(a) <= eps) {
-        if (std::abs(b) <= eps) {
-            if (std::abs(c) <= eps) {
-                return RootCount::Infinite; // 0 = 0
-            }
-            return RootCount::None; // c = 0, где c != 0 (например, 5 = 0)
+std::string concatenate(const std::string& a, const std::string& b) {
+    return a + b;
+}
+
+std::string reverse(const std::string& s) {
+    std::string result = s;
+    std::reverse(result.begin(), result.end());
+    return result;
+}
+
+std::string toUpperCase(const std::string& s) {
+    std::string result = s;
+    std::transform(result.begin(), result.end(), result.begin(),
+                   [](unsigned char c) { return std::toupper(c); });
+    return result;
+}
+
+std::string toLowerCase(const std::string& s) {
+    std::string result = s;
+    std::transform(result.begin(), result.end(), result.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    return result;
+}
+
+int findSubstring(const std::string& s, const std::string& sub) {
+    if (sub.empty()) {
+        return 0; // Пустая подстрока найдена в начале
+    }
+    size_t pos = s.find(sub);
+    if (pos == std::string::npos) {
+        return -1;
+    }
+    return static_cast<int>(pos);
+}
+
+std::vector<std::string> split(const std::string& s, char delimiter) {
+    std::vector<std::string> result;
+    if (s.empty()) {
+        return result; // Пустая строка → пустой вектор
+    }
+
+    std::string current;
+    for (char c : s) {
+        if (c == delimiter) {
+            result.push_back(current);
+            current.clear();
+        } else {
+            current += c;
         }
-        // Линейное уравнение bx + c = 0
-        x1 = -c / b;
-        return RootCount::One;
     }
+    result.push_back(current); // Добавляем последнюю часть
 
-    // Полноценное квадратное уравнение
-    double discriminant = b * b - 4.0 * a * c;
-
-    if (discriminant > eps) {
-        double sqrtD = std::sqrt(discriminant);
-        x1 = (-b + sqrtD) / (2.0 * a);
-        x2 = (-b - sqrtD) / (2.0 * a);
-        return RootCount::Two;
-    } else if (discriminant < -eps) {
-        return RootCount::None;
-    } else {
-        // D == 0 (один корень кратности 2)
-        x1 = -b / (2.0 * a);
-        return RootCount::One;
-    }
+    return result;
 }
 
 } // namespace mylib

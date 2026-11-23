@@ -1,175 +1,200 @@
 #include "file.h"
 #include <QtTest/QtTest>
-#include <cmath>
-#include <algorithm>
-#include <array>
 
-class TestQuadratic : public QObject
+class TestStrings : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // Квадратные уравнения (a != 0)
-    void solveQuadratic_twoDistinctRoots();
-    void solveQuadratic_oneRoot_Dzero();
-    void solveQuadratic_noRealRoots_Dnegative();
-    void solveQuadratic_cIsZero_oneRootIsZero();
-    void solveQuadratic_negativeA();
+    // stringLength
+    void stringLength_emptyString();
+    void stringLength_singleChar();
+    void stringLength_normalString();
 
-    // Вырожденные случаи (a == 0)
-    void solveQuadratic_degenerate_linear_oneRoot();
-    void solveQuadratic_degenerate_constant_noRoots();
-    void solveQuadratic_degenerate_allZeros_infinite();
+    // concatenate
+    void concatenate_twoStrings();
+    void concatenate_emptyStrings();
+    void concatenate_oneEmpty();
 
-    // Параметризованные тесты: квадратные уравнения
-    void solveQuadratic_paramQuad_data();
-    void solveQuadratic_paramQuad();
+    // reverse
+    void reverse_emptyString();
+    void reverse_singleChar();
+    void reverse_normalString();
+    void reverse_palindrome();
 
-    // Параметризованные тесты: линейные уравнения
-    void solveQuadratic_paramLin_data();
-    void solveQuadratic_paramLin();
+    // toUpperCase / toLowerCase (параметризованные)
+    void caseConversion_data();
+    void caseConversion();
 
-    // Граничные случаи и точность
-    void solveQuadratic_largeCoefficients();
-    void solveQuadratic_smallCoefficients();
-    void solveQuadratic_rootsSorting();
+    // findSubstring
+    void findSubstring_found();
+    void findSubstring_notFound();
+    void findSubstring_emptySubstring();
+    void findSubstring_substringLongerThanString();
+    void findSubstring_atBeginning();
+    void findSubstring_atEnd();
+
+    // split (параметризованные)
+    void split_data();
+    void split();
+
+    // Граничные случаи split
+    void split_delimiterAtStart();
+    void split_delimiterAtEnd();
+    void split_multipleDelimiters();
+    void split_onlyDelimiters();
 };
 
-// --- Квадратные уравнения ---
-void TestQuadratic::solveQuadratic_twoDistinctRoots() {
-    double x1 = 0, x2 = 0;
-    mylib::RootCount count = mylib::solveQuadratic(1, -3, 2, x1, x2); // x^2 - 3x + 2 = 0
-    QCOMPARE(count, mylib::RootCount::Two);
-
-    std::array<double, 2> roots = {x1, x2};
-    std::sort(roots.begin(), roots.end());
-    QVERIFY(std::abs(roots[0] - 1.0) < 1e-9);
-    QVERIFY(std::abs(roots[1] - 2.0) < 1e-9);
+// --- stringLength ---
+void TestStrings::stringLength_emptyString() {
+    QCOMPARE(mylib::stringLength(""), 0u);
 }
 
-void TestQuadratic::solveQuadratic_oneRoot_Dzero() {
-    double x1 = 0, x2 = 0;
-    mylib::RootCount count = mylib::solveQuadratic(1, -2, 1, x1, x2); // (x-1)^2 = 0
-    QCOMPARE(count, mylib::RootCount::One);
-    QVERIFY(std::abs(x1 - 1.0) < 1e-9);
+void TestStrings::stringLength_singleChar() {
+    QCOMPARE(mylib::stringLength("a"), 1u);
 }
 
-void TestQuadratic::solveQuadratic_noRealRoots_Dnegative() {
-    double x1 = 0, x2 = 0;
-    mylib::RootCount count = mylib::solveQuadratic(1, 0, 1, x1, x2); // x^2 + 1 = 0
-    QCOMPARE(count, mylib::RootCount::None);
+void TestStrings::stringLength_normalString() {
+    QCOMPARE(mylib::stringLength("hello"), 5u);
 }
 
-void TestQuadratic::solveQuadratic_cIsZero_oneRootIsZero() {
-    double x1 = 0, x2 = 0;
-    mylib::RootCount count = mylib::solveQuadratic(1, -5, 0, x1, x2); // x^2 - 5x = 0
-    QCOMPARE(count, mylib::RootCount::Two);
-
-    std::array<double, 2> roots = {x1, x2};
-    std::sort(roots.begin(), roots.end());
-    QVERIFY(std::abs(roots[0] - 0.0) < 1e-9);
-    QVERIFY(std::abs(roots[1] - 5.0) < 1e-9);
+// --- concatenate ---
+void TestStrings::concatenate_twoStrings() {
+    QCOMPARE(mylib::concatenate("hello", " world"), std::string("hello world"));
 }
 
-void TestQuadratic::solveQuadratic_negativeA() {
-    double x1 = 0, x2 = 0;
-    mylib::RootCount count = mylib::solveQuadratic(-1, 0, 4, x1, x2); // -x^2 + 4 = 0
-    QCOMPARE(count, mylib::RootCount::Two);
-
-    std::array<double, 2> roots = {x1, x2};
-    std::sort(roots.begin(), roots.end());
-    QVERIFY(std::abs(roots[0] - (-2.0)) < 1e-9);
-    QVERIFY(std::abs(roots[1] - 2.0) < 1e-9);
+void TestStrings::concatenate_emptyStrings() {
+    QCOMPARE(mylib::concatenate("", ""), std::string(""));
 }
 
-// --- Вырожденные случаи ---
-void TestQuadratic::solveQuadratic_degenerate_linear_oneRoot() {
-    double x1 = 0, x2 = 0;
-    mylib::RootCount count = mylib::solveQuadratic(0, 2, -6, x1, x2); // 2x - 6 = 0
-    QCOMPARE(count, mylib::RootCount::One);
-    QVERIFY(std::abs(x1 - 3.0) < 1e-9);
+void TestStrings::concatenate_oneEmpty() {
+    QCOMPARE(mylib::concatenate("hello", ""), std::string("hello"));
+    QCOMPARE(mylib::concatenate("", "world"), std::string("world"));
 }
 
-void TestQuadratic::solveQuadratic_degenerate_constant_noRoots() {
-    double x1 = 0, x2 = 0;
-    mylib::RootCount count = mylib::solveQuadratic(0, 0, 5, x1, x2); // 5 = 0
-    QCOMPARE(count, mylib::RootCount::None);
+// --- reverse ---
+void TestStrings::reverse_emptyString() {
+    QCOMPARE(mylib::reverse(""), std::string(""));
 }
 
-void TestQuadratic::solveQuadratic_degenerate_allZeros_infinite() {
-    double x1 = 0, x2 = 0;
-    mylib::RootCount count = mylib::solveQuadratic(0, 0, 0, x1, x2); // 0 = 0
-    QCOMPARE(count, mylib::RootCount::Infinite);
+void TestStrings::reverse_singleChar() {
+    QCOMPARE(mylib::reverse("a"), std::string("a"));
 }
 
-// --- Параметризованные тесты: квадратные ---
-void TestQuadratic::solveQuadratic_paramQuad_data() {
-    QTest::addColumn<double>("a");
-    QTest::addColumn<double>("b");
-    QTest::addColumn<double>("c");
-    QTest::addColumn<mylib::RootCount>("expectedCount");
-
-    QTest::newRow("x^2-4=0") << 1.0 << 0.0 << -4.0 << mylib::RootCount::Two;
-    QTest::newRow("2x^2+8x+8=0") << 2.0 << 8.0 << 8.0 << mylib::RootCount::One;
-    QTest::newRow("x^2+x+1=0") << 1.0 << 1.0 << 1.0 << mylib::RootCount::None;
+void TestStrings::reverse_normalString() {
+    QCOMPARE(mylib::reverse("hello"), std::string("olleh"));
 }
 
-void TestQuadratic::solveQuadratic_paramQuad() {
-    QFETCH(double, a);
-    QFETCH(double, b);
-    QFETCH(double, c);
-    QFETCH(mylib::RootCount, expectedCount);
-
-    double x1 = 0, x2 = 0;
-    QCOMPARE(mylib::solveQuadratic(a, b, c, x1, x2), expectedCount);
+void TestStrings::reverse_palindrome() {
+    QCOMPARE(mylib::reverse("madam"), std::string("madam"));
 }
 
-// --- Параметризованные тесты: линейные ---
-void TestQuadratic::solveQuadratic_paramLin_data() {
-    QTest::addColumn<double>("b");
-    QTest::addColumn<double>("c");
-    QTest::addColumn<mylib::RootCount>("expectedCount");
+// --- caseConversion (параметризованный) ---
+void TestStrings::caseConversion_data() {
+    QTest::addColumn<std::string>("input");
+    QTest::addColumn<std::string>("upper");
+    QTest::addColumn<std::string>("lower");
 
-    QTest::newRow("3x-9=0") << 3.0 << -9.0 << mylib::RootCount::One;
-    QTest::newRow("0x+5=0") << 0.0 << 5.0 << mylib::RootCount::None;
-    QTest::newRow("0x+0=0") << 0.0 << 0.0 << mylib::RootCount::Infinite;
+    QTest::newRow("hello") << std::string("hello") << std::string("HELLO") << std::string("hello");
+    QTest::newRow("WORLD") << std::string("WORLD") << std::string("WORLD") << std::string("world");
+    QTest::newRow("MiXeD") << std::string("MiXeD") << std::string("MIXED") << std::string("mixed");
+    QTest::newRow("empty") << std::string("") << std::string("") << std::string("");
+    QTest::newRow("numbers123") << std::string("abc123") << std::string("ABC123") << std::string("abc123");
 }
 
-void TestQuadratic::solveQuadratic_paramLin() {
-    QFETCH(double, b);
-    QFETCH(double, c);
-    QFETCH(mylib::RootCount, expectedCount);
+void TestStrings::caseConversion() {
+    QFETCH(std::string, input);
+    QFETCH(std::string, upper);
+    QFETCH(std::string, lower);
 
-    double x1 = 0, x2 = 0;
-    QCOMPARE(mylib::solveQuadratic(0.0, b, c, x1, x2), expectedCount);
+    QCOMPARE(mylib::toUpperCase(input), upper);
+    QCOMPARE(mylib::toLowerCase(input), lower);
 }
 
-// --- Граничные случаи ---
-void TestQuadratic::solveQuadratic_largeCoefficients() {
-    double x1 = 0, x2 = 0;
-    // x^2 - 2000000x + 1000000 = 0
-    mylib::RootCount count = mylib::solveQuadratic(1, -2000000, 1000000, x1, x2);
-    QCOMPARE(count, mylib::RootCount::Two);
-    QVERIFY(x1 != 0 || x2 != 0); // Просто проверяем, что не упало и корни есть
+// --- findSubstring ---
+void TestStrings::findSubstring_found() {
+    QCOMPARE(mylib::findSubstring("hello world", "world"), 6);
 }
 
-void TestQuadratic::solveQuadratic_smallCoefficients() {
-    double x1 = 0, x2 = 0;
-    // 0.0001x^2 + 0.0002x + 0.0001 = 0 -> D=0, x=-1
-    mylib::RootCount count = mylib::solveQuadratic(0.0001, 0.0002, 0.0001, x1, x2);
-    QCOMPARE(count, mylib::RootCount::One);
-    QVERIFY(std::abs(x1 - (-1.0)) < 1e-5);
+void TestStrings::findSubstring_notFound() {
+    QCOMPARE(mylib::findSubstring("hello", "xyz"), -1);
 }
 
-void TestQuadratic::solveQuadratic_rootsSorting() {
-    double x1 = 0, x2 = 0;
-    // a < 0 меняет порядок корней в формуле, но сортировка в тесте это исправит
-    mylib::solveQuadratic(-1, 0, 9, x1, x2);
-    std::array<double, 2> roots = {x1, x2};
-    std::sort(roots.begin(), roots.end());
-    QVERIFY(std::abs(roots[0] - (-3.0)) < 1e-9);
-    QVERIFY(std::abs(roots[1] - 3.0) < 1e-9);
+void TestStrings::findSubstring_emptySubstring() {
+    QCOMPARE(mylib::findSubstring("hello", ""), 0);
 }
 
-QTEST_MAIN(TestQuadratic)
+void TestStrings::findSubstring_substringLongerThanString() {
+    QCOMPARE(mylib::findSubstring("hi", "hello"), -1);
+}
+
+void TestStrings::findSubstring_atBeginning() {
+    QCOMPARE(mylib::findSubstring("hello world", "hello"), 0);
+}
+
+void TestStrings::findSubstring_atEnd() {
+    QCOMPARE(mylib::findSubstring("hello world", "world"), 6);
+}
+
+// --- split (параметризованный) ---
+void TestStrings::split_data() {
+    QTest::addColumn<std::string>("input");
+    QTest::addColumn<char>("delimiter");
+    QTest::addColumn<std::vector<std::string>>("expected");
+
+    QTest::newRow("simple")
+        << std::string("a,b,c") << ','
+        << std::vector<std::string>{"a", "b", "c"};
+
+    QTest::newRow("noDelimiter")
+        << std::string("hello") << ','
+        << std::vector<std::string>{"hello"};
+
+    QTest::newRow("emptyString")
+        << std::string("") << ','
+        << std::vector<std::string>{};
+}
+
+void TestStrings::split() {
+    QFETCH(std::string, input);
+    QFETCH(char, delimiter);
+    QFETCH(std::vector<std::string>, expected);
+
+    QCOMPARE(mylib::split(input, delimiter), expected);
+}
+
+// --- Граничные случаи split ---
+void TestStrings::split_delimiterAtStart() {
+    auto result = mylib::split(",a,b", ',');
+    QCOMPARE(result.size(), 3u);
+    QCOMPARE(result[0], std::string(""));
+    QCOMPARE(result[1], std::string("a"));
+    QCOMPARE(result[2], std::string("b"));
+}
+
+void TestStrings::split_delimiterAtEnd() {
+    auto result = mylib::split("a,b,", ',');
+    QCOMPARE(result.size(), 3u);
+    QCOMPARE(result[0], std::string("a"));
+    QCOMPARE(result[1], std::string("b"));
+    QCOMPARE(result[2], std::string(""));
+}
+
+void TestStrings::split_multipleDelimiters() {
+    auto result = mylib::split("a,,b", ',');
+    QCOMPARE(result.size(), 3u);
+    QCOMPARE(result[0], std::string("a"));
+    QCOMPARE(result[1], std::string(""));
+    QCOMPARE(result[2], std::string("b"));
+}
+
+void TestStrings::split_onlyDelimiters() {
+    auto result = mylib::split(",,,", ',');
+    QCOMPARE(result.size(), 4u);
+    for (const auto& s : result) {
+        QCOMPARE(s, std::string(""));
+    }
+}
+
+QTEST_MAIN(TestStrings)
 #include "test_file.moc"

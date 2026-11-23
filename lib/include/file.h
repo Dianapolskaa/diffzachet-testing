@@ -1,19 +1,32 @@
 #pragma once
+#include <string>
+#include <vector>
 
 namespace mylib {
 
-enum class RootCount {
-    None,       // Нет действительных корней
-    One,        // Один корень (или линейное уравнение)
-    Two,        // Два различных корня
-    Infinite    // Бесконечно много корней (тождество 0 = 0)
-};
+// Возвращает длину строки. Для пустой строки возвращает 0.
+size_t stringLength(const std::string& s);
 
-// Решает уравнение ax^2 + bx + c = 0.
-// Если a == 0, уравнение вырождается в линейное bx + c = 0.
-// Возвращает количество корней. Значения корней записываются в x1 и x2.
-// Для RootCount::One корень записывается в x1.
-// Для RootCount::None или Infinite значения x1 и x2 не изменяются.
-RootCount solveQuadratic(double a, double b, double c, double& x1, double& x2);
+// Конкатенация двух строк.
+std::string concatenate(const std::string& a, const std::string& b);
+
+// Реверс строки. Для пустой строки возвращает пустую строку.
+std::string reverse(const std::string& s);
+
+// Перевод всех символов в верхний регистр.
+std::string toUpperCase(const std::string& s);
+
+// Перевод всех символов в нижний регистр.
+std::string toLowerCase(const std::string& s);
+
+// Поиск первого вхождения подстроки.
+// Возвращает индекс первого вхождения или -1, если подстрока не найдена.
+// Если подстрока пустая, возвращает 0.
+int findSubstring(const std::string& s, const std::string& sub);
+
+// Разбиение строки по разделителю.
+// Возвращает вектор подстрок. Если строка пустая, возвращает пустой вектор.
+// Несколько разделителей подряд создают пустые строки в результате.
+std::vector<std::string> split(const std::string& s, char delimiter);
 
 } // namespace mylib
