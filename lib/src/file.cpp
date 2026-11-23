@@ -1,58 +1,58 @@
 #include "file.h"
-#include <cmath>
-#include <climits>
+#include <cctype>
 
 namespace mylib {
 
-long long gcd(long long a, long long b) {
-    a = std::abs(a);
-    b = std::abs(b);
-    while (b != 0) {
-        long long t = b;
-        b = a % b;
-        a = t;
-    }
-    return a;
-}
-
-long long lcm(long long a, long long b) {
-    if (a == 0 || b == 0) {
-        return 0;
-    }
-    a = std::abs(a);
-    b = std::abs(b);
-
-    long long g = gcd(a, b);
-    long long div = a / g;
-
-    // Проверка переполнения перед умножением
-    if (div > LLONG_MAX / b) {
-        throw std::overflow_error("LCM result overflows long long");
-    }
-
-    return div * b;
-}
-
-std::vector<long long> primeFactors(long long n) {
-    std::vector<long long> factors;
-    n = std::abs(n);
-
-    if (n <= 1) {
-        return factors; // Пустой вектор для 0, 1 и -1
-    }
-
-    for (long long i = 2; i * i <= n; ++i) {
-        while (n % i == 0) {
-            factors.push_back(i);
-            n /= i;
+int countWords(const std::string& s) {
+    int count = 0;
+    bool inWord = false;
+    for (char c : s) {
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            inWord = false;
+        } else {
+            if (!inWord) {
+                count++;
+                inWord = true;
+            }
         }
     }
+    return count;
+}
 
-    if (n > 1) {
-        factors.push_back(n);
+int countCharOccurrences(const std::string& s, char c) {
+    int count = 0;
+    for (char ch : s) {
+        if (ch == c) count++;
     }
+    return count;
+}
 
-    return factors;
+char mostFrequentLetter(const std::string& s) {
+    int freq[256] = {0};
+    char mostFreq = '\0';
+    int maxCount = 0;
+
+    for (char c : s) {
+        if (std::isalpha(static_cast<unsigned char>(c))) {
+            unsigned char idx = static_cast<unsigned char>(c);
+            freq[idx]++;
+            if (freq[idx] > maxCount) {
+                maxCount = freq[idx];
+                mostFreq = c;
+            }
+        }
+    }
+    return mostFreq;
+}
+
+size_t longestStringLength(const std::vector<std::string>& arr) {
+    size_t maxLen = 0;
+    for (const auto& str : arr) {
+        if (str.length() > maxLen) {
+            maxLen = str.length();
+        }
+    }
+    return maxLen;
 }
 
 } // namespace mylib
