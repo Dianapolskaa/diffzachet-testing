@@ -1,307 +1,227 @@
 #include "file.h"
 #include <QtTest/QtTest>
-#include <stdexcept>
 
-class TestDynamicArray : public QObject
+class TestSorting : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // Конструкторы и правило трёх
-    void constructor_default_capacity4();
-    void constructor_customCapacity();
-    void constructor_invalidCapacity_throws();
-    void copyConstructor_deepCopy();
-    void assignmentOperator_deepCopy();
-    void assignmentOperator_selfAssignment();
+    // Пузырьковая
+    void bubbleSort_emptyArray();
+    void bubbleSort_singleElement();
+    void bubbleSort_alreadySorted();
+    void bubbleSort_reverseSorted();
+    void bubbleSort_withDuplicates();
+    void bubbleSort_ascending();
+    void bubbleSort_descending();
 
-    // pushBack и popBack
-    void pushBack_basic();
-    void pushBack_autoResize();
-    void popBack_basic();
-    void popBack_empty_throws();
-    void popBack_shrinkCapacity();
+    // Вставками
+    void insertionSort_emptyArray();
+    void insertionSort_singleElement();
+    void insertionSort_alreadySorted();
+    void insertionSort_reverseSorted();
+    void insertionSort_withDuplicates();
+    void insertionSort_ascending();
+    void insertionSort_descending();
 
-    // insertAt и removeAt
-    void insertAt_beginning();
-    void insertAt_end();
-    void insertAt_middle();
-    void insertAt_invalidIndex_throws();
-    void removeAt_beginning();
-    void removeAt_end();
-    void removeAt_middle();
-    void removeAt_invalidIndex_throws();
+    // Слиянием
+    void mergeSort_emptyArray();
+    void mergeSort_singleElement();
+    void mergeSort_alreadySorted();
+    void mergeSort_reverseSorted();
+    void mergeSort_withDuplicates();
+    void mergeSort_ascending();
+    void mergeSort_descending();
 
-    // get и set
-    void get_validIndex();
-    void get_invalidIndex_throws();
-    void set_validIndex();
-    void set_invalidIndex_throws();
-
-    // indexOf и clear
-    void indexOf_found();
-    void indexOf_notFound();
-    void clear_resetsSize();
-
-    // Параметризованные тесты
-    void pushBack_parameterized_data();
-    void pushBack_parameterized();
+    // Параметризованные
+    void bubbleSort_parameterized_data();
+    void bubbleSort_parameterized();
+    void insertionSort_parameterized_data();
+    void insertionSort_parameterized();
+    void mergeSort_parameterized_data();
+    void mergeSort_parameterized();
 };
 
-// --- Конструкторы и правило трёх ---
-void TestDynamicArray::constructor_default_capacity4() {
-    mylib::DynamicArray arr;
-    QCOMPARE(arr.size(), 0);
-    QCOMPARE(arr.capacity(), 4);
+// ===== Пузырьковая сортировка =====
+void TestSorting::bubbleSort_emptyArray() {
+    std::vector<int> arr;
+    mylib::bubbleSort(arr, mylib::ascending);
+    QCOMPARE(arr.size(), 0u);
 }
 
-void TestDynamicArray::constructor_customCapacity() {
-    mylib::DynamicArray arr(10);
-    QCOMPARE(arr.size(), 0);
-    QCOMPARE(arr.capacity(), 10);
+void TestSorting::bubbleSort_singleElement() {
+    std::vector<int> arr = {42};
+    mylib::bubbleSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{42}));
 }
 
-void TestDynamicArray::constructor_invalidCapacity_throws() {
-    QVERIFY_EXCEPTION_THROWN(mylib::DynamicArray(0), std::invalid_argument);
-    QVERIFY_EXCEPTION_THROWN(mylib::DynamicArray(-5), std::invalid_argument);
+void TestSorting::bubbleSort_alreadySorted() {
+    std::vector<int> arr = {1, 2, 3, 4, 5};
+    mylib::bubbleSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{1, 2, 3, 4, 5}));
 }
 
-void TestDynamicArray::copyConstructor_deepCopy() {
-    mylib::DynamicArray arr1;
-    arr1.pushBack(10);
-    arr1.pushBack(20);
-
-    mylib::DynamicArray arr2(arr1);
-    QCOMPARE(arr2.size(), 2);
-    QCOMPARE(arr2.get(0), 10);
-    QCOMPARE(arr2.get(1), 20);
-
-    // Изменяем arr1, arr2 не должен измениться
-    arr1.pushBack(30);
-    QCOMPARE(arr1.size(), 3);
-    QCOMPARE(arr2.size(), 2);
+void TestSorting::bubbleSort_reverseSorted() {
+    std::vector<int> arr = {5, 4, 3, 2, 1};
+    mylib::bubbleSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{1, 2, 3, 4, 5}));
 }
 
-void TestDynamicArray::assignmentOperator_deepCopy() {
-    mylib::DynamicArray arr1;
-    arr1.pushBack(10);
-    arr1.pushBack(20);
-
-    mylib::DynamicArray arr2;
-    arr2 = arr1;
-    QCOMPARE(arr2.size(), 2);
-    QCOMPARE(arr2.get(0), 10);
-
-    arr1.pushBack(30);
-    QCOMPARE(arr1.size(), 3);
-    QCOMPARE(arr2.size(), 2);
+void TestSorting::bubbleSort_withDuplicates() {
+    std::vector<int> arr = {3, 1, 2, 1, 3, 2};
+    mylib::bubbleSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{1, 1, 2, 2, 3, 3}));
 }
 
-void TestDynamicArray::assignmentOperator_selfAssignment() {
-    mylib::DynamicArray arr;
-    arr.pushBack(10);
-    arr = arr; // Самоприсваивание не должно упасть
-    QCOMPARE(arr.size(), 1);
-    QCOMPARE(arr.get(0), 10);
+void TestSorting::bubbleSort_ascending() {
+    std::vector<int> arr = {64, 34, 25, 12, 22, 11, 90};
+    mylib::bubbleSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{11, 12, 22, 25, 34, 64, 90}));
 }
 
-// --- pushBack и popBack ---
-void TestDynamicArray::pushBack_basic() {
-    mylib::DynamicArray arr;
-    arr.pushBack(10);
-    arr.pushBack(20);
-    QCOMPARE(arr.size(), 2);
-    QCOMPARE(arr.get(0), 10);
-    QCOMPARE(arr.get(1), 20);
+void TestSorting::bubbleSort_descending() {
+    std::vector<int> arr = {64, 34, 25, 12, 22, 11, 90};
+    mylib::bubbleSort(arr, mylib::descending);
+    QCOMPARE(arr, (std::vector<int>{90, 64, 34, 25, 22, 12, 11}));
 }
 
-void TestDynamicArray::pushBack_autoResize() {
-    mylib::DynamicArray arr(2); // Ёмкость = 2
-    arr.pushBack(1);
-    arr.pushBack(2);
-    QCOMPARE(arr.capacity(), 2);
-    arr.pushBack(3); // Должно увеличить ёмкость до 4
-    QCOMPARE(arr.capacity(), 4);
-    QCOMPARE(arr.size(), 3);
+// ===== Сортировка вставками =====
+void TestSorting::insertionSort_emptyArray() {
+    std::vector<int> arr;
+    mylib::insertionSort(arr, mylib::ascending);
+    QCOMPARE(arr.size(), 0u);
 }
 
-void TestDynamicArray::popBack_basic() {
-    mylib::DynamicArray arr;
-    arr.pushBack(10);
-    arr.pushBack(20);
-    arr.popBack();
-    QCOMPARE(arr.size(), 1);
-    QCOMPARE(arr.get(0), 10);
+void TestSorting::insertionSort_singleElement() {
+    std::vector<int> arr = {42};
+    mylib::insertionSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{42}));
 }
 
-void TestDynamicArray::popBack_empty_throws() {
-    mylib::DynamicArray arr;
-    QVERIFY_EXCEPTION_THROWN(arr.popBack(), std::runtime_error);
+void TestSorting::insertionSort_alreadySorted() {
+    std::vector<int> arr = {1, 2, 3, 4, 5};
+    mylib::insertionSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{1, 2, 3, 4, 5}));
 }
 
-void TestDynamicArray::popBack_shrinkCapacity() {
-    mylib::DynamicArray arr(4);
-    arr.pushBack(1);
-    arr.pushBack(2);
-    arr.pushBack(3);
-    arr.pushBack(4);
-    QCOMPARE(arr.capacity(), 4);
-
-    arr.popBack();
-    arr.popBack();
-    arr.popBack(); // size = 1, capacity = 4, 1 <= 4/4 = 1 -> shrink
-    QCOMPARE(arr.capacity(), 2);
+void TestSorting::insertionSort_reverseSorted() {
+    std::vector<int> arr = {5, 4, 3, 2, 1};
+    mylib::insertionSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{1, 2, 3, 4, 5}));
 }
 
-// --- insertAt и removeAt ---
-void TestDynamicArray::insertAt_beginning() {
-    mylib::DynamicArray arr;
-    arr.pushBack(2);
-    arr.pushBack(3);
-    arr.insertAt(0, 1);
-    QCOMPARE(arr.get(0), 1);
-    QCOMPARE(arr.get(1), 2);
-    QCOMPARE(arr.get(2), 3);
+void TestSorting::insertionSort_withDuplicates() {
+    std::vector<int> arr = {3, 1, 2, 1, 3, 2};
+    mylib::insertionSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{1, 1, 2, 2, 3, 3}));
 }
 
-void TestDynamicArray::insertAt_end() {
-    mylib::DynamicArray arr;
-    arr.pushBack(1);
-    arr.insertAt(1, 2);
-    QCOMPARE(arr.get(1), 2);
+void TestSorting::insertionSort_ascending() {
+    std::vector<int> arr = {64, 34, 25, 12, 22, 11, 90};
+    mylib::insertionSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{11, 12, 22, 25, 34, 64, 90}));
 }
 
-void TestDynamicArray::insertAt_middle() {
-    mylib::DynamicArray arr;
-    arr.pushBack(1);
-    arr.pushBack(3);
-    arr.insertAt(1, 2);
-    QCOMPARE(arr.get(1), 2);
+void TestSorting::insertionSort_descending() {
+    std::vector<int> arr = {64, 34, 25, 12, 22, 11, 90};
+    mylib::insertionSort(arr, mylib::descending);
+    QCOMPARE(arr, (std::vector<int>{90, 64, 34, 25, 22, 12, 11}));
 }
 
-void TestDynamicArray::insertAt_invalidIndex_throws() {
-    mylib::DynamicArray arr;
-    arr.pushBack(1);
-    QVERIFY_EXCEPTION_THROWN(arr.insertAt(-1, 5), std::out_of_range);
-    QVERIFY_EXCEPTION_THROWN(arr.insertAt(5, 5), std::out_of_range);
+// ===== Сортировка слиянием =====
+void TestSorting::mergeSort_emptyArray() {
+    std::vector<int> arr;
+    mylib::mergeSort(arr, mylib::ascending);
+    QCOMPARE(arr.size(), 0u);
 }
 
-void TestDynamicArray::removeAt_beginning() {
-    mylib::DynamicArray arr;
-    arr.pushBack(1);
-    arr.pushBack(2);
-    arr.pushBack(3);
-    arr.removeAt(0);
-    QCOMPARE(arr.get(0), 2);
-    QCOMPARE(arr.size(), 2);
+void TestSorting::mergeSort_singleElement() {
+    std::vector<int> arr = {42};
+    mylib::mergeSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{42}));
 }
 
-void TestDynamicArray::removeAt_end() {
-    mylib::DynamicArray arr;
-    arr.pushBack(1);
-    arr.pushBack(2);
-    arr.removeAt(1);
-    QCOMPARE(arr.size(), 1);
+void TestSorting::mergeSort_alreadySorted() {
+    std::vector<int> arr = {1, 2, 3, 4, 5};
+    mylib::mergeSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{1, 2, 3, 4, 5}));
 }
 
-void TestDynamicArray::removeAt_middle() {
-    mylib::DynamicArray arr;
-    arr.pushBack(1);
-    arr.pushBack(2);
-    arr.pushBack(3);
-    arr.removeAt(1);
-    QCOMPARE(arr.get(1), 3);
+void TestSorting::mergeSort_reverseSorted() {
+    std::vector<int> arr = {5, 4, 3, 2, 1};
+    mylib::mergeSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{1, 2, 3, 4, 5}));
 }
 
-void TestDynamicArray::removeAt_invalidIndex_throws() {
-    mylib::DynamicArray arr;
-    arr.pushBack(1);
-    QVERIFY_EXCEPTION_THROWN(arr.removeAt(-1), std::out_of_range);
-    QVERIFY_EXCEPTION_THROWN(arr.removeAt(1), std::out_of_range);
+void TestSorting::mergeSort_withDuplicates() {
+    std::vector<int> arr = {3, 1, 2, 1, 3, 2};
+    mylib::mergeSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{1, 1, 2, 2, 3, 3}));
 }
 
-// --- get и set ---
-void TestDynamicArray::get_validIndex() {
-    mylib::DynamicArray arr;
-    arr.pushBack(42);
-    QCOMPARE(arr.get(0), 42);
+void TestSorting::mergeSort_ascending() {
+    std::vector<int> arr = {64, 34, 25, 12, 22, 11, 90};
+    mylib::mergeSort(arr, mylib::ascending);
+    QCOMPARE(arr, (std::vector<int>{11, 12, 22, 25, 34, 64, 90}));
 }
 
-void TestDynamicArray::get_invalidIndex_throws() {
-    mylib::DynamicArray arr;
-    arr.pushBack(1);
-    QVERIFY_EXCEPTION_THROWN(arr.get(-1), std::out_of_range);
-    QVERIFY_EXCEPTION_THROWN(arr.get(1), std::out_of_range);
+void TestSorting::mergeSort_descending() {
+    std::vector<int> arr = {64, 34, 25, 12, 22, 11, 90};
+    mylib::mergeSort(arr, mylib::descending);
+    QCOMPARE(arr, (std::vector<int>{90, 64, 34, 25, 22, 12, 11}));
 }
 
-void TestDynamicArray::set_validIndex() {
-    mylib::DynamicArray arr;
-    arr.pushBack(10);
-    arr.set(0, 20);
-    QCOMPARE(arr.get(0), 20);
+// ===== Параметризованные тесты =====
+void TestSorting::bubbleSort_parameterized_data() {
+    QTest::addColumn<std::vector<int>>("input");
+    QTest::addColumn<std::vector<int>>("expected");
+
+    QTest::newRow("two_elements") << std::vector<int>{2, 1} << std::vector<int>{1, 2};
+    QTest::newRow("all_same") << std::vector<int>{5, 5, 5} << std::vector<int>{5, 5, 5};
+    QTest::newRow("negative_numbers") << std::vector<int>{-3, -1, -2} << std::vector<int>{-3, -2, -1};
 }
 
-void TestDynamicArray::set_invalidIndex_throws() {
-    mylib::DynamicArray arr;
-    arr.pushBack(1);
-    QVERIFY_EXCEPTION_THROWN(arr.set(-1, 5), std::out_of_range);
-    QVERIFY_EXCEPTION_THROWN(arr.set(1, 5), std::out_of_range);
+void TestSorting::bubbleSort_parameterized() {
+    QFETCH(std::vector<int>, input);
+    QFETCH(std::vector<int>, expected);
+
+    mylib::bubbleSort(input, mylib::ascending);
+    QCOMPARE(input, expected);
 }
 
-// --- indexOf и clear ---
-void TestDynamicArray::indexOf_found() {
-    mylib::DynamicArray arr;
-    arr.pushBack(10);
-    arr.pushBack(20);
-    arr.pushBack(30);
-    QCOMPARE(arr.indexOf(20), 1);
+void TestSorting::insertionSort_parameterized_data() {
+    QTest::addColumn<std::vector<int>>("input");
+    QTest::addColumn<std::vector<int>>("expected");
+
+    QTest::newRow("two_elements") << std::vector<int>{2, 1} << std::vector<int>{1, 2};
+    QTest::newRow("all_same") << std::vector<int>{5, 5, 5} << std::vector<int>{5, 5, 5};
+    QTest::newRow("negative_numbers") << std::vector<int>{-3, -1, -2} << std::vector<int>{-3, -2, -1};
 }
 
-void TestDynamicArray::indexOf_notFound() {
-    mylib::DynamicArray arr;
-    arr.pushBack(10);
-    QCOMPARE(arr.indexOf(99), -1);
+void TestSorting::insertionSort_parameterized() {
+    QFETCH(std::vector<int>, input);
+    QFETCH(std::vector<int>, expected);
+
+    mylib::insertionSort(input, mylib::ascending);
+    QCOMPARE(input, expected);
 }
 
-void TestDynamicArray::clear_resetsSize() {
-    mylib::DynamicArray arr;
-    arr.pushBack(1);
-    arr.pushBack(2);
-    arr.clear();
-    QCOMPARE(arr.size(), 0);
-    QCOMPARE(arr.capacity(), 4); // Ёмкость не меняется
+void TestSorting::mergeSort_parameterized_data() {
+    QTest::addColumn<std::vector<int>>("input");
+    QTest::addColumn<std::vector<int>>("expected");
+
+    QTest::newRow("two_elements") << std::vector<int>{2, 1} << std::vector<int>{1, 2};
+    QTest::newRow("all_same") << std::vector<int>{5, 5, 5} << std::vector<int>{5, 5, 5};
+    QTest::newRow("negative_numbers") << std::vector<int>{-3, -1, -2} << std::vector<int>{-3, -2, -1};
 }
 
-// --- Параметризованные тесты ---
-void TestDynamicArray::pushBack_parameterized_data() {
-    QTest::addColumn<int>("initialCapacity");
-    QTest::addColumn<QList<int>>("values");
-    QTest::addColumn<int>("expectedSize");
-    QTest::addColumn<int>("expectedCapacity");
+void TestSorting::mergeSort_parameterized() {
+    QFETCH(std::vector<int>, input);
+    QFETCH(std::vector<int>, expected);
 
-    QTest::newRow("small_array")
-        << 2 << QList<int>{1, 2, 3} << 3 << 4;
-
-    QTest::newRow("exact_capacity")
-        << 3 << QList<int>{10, 20, 30} << 3 << 3;
-
-    QTest::newRow("large_array")
-        << 1 << QList<int>{1, 2, 3, 4, 5} << 5 << 8;
+    mylib::mergeSort(input, mylib::ascending);
+    QCOMPARE(input, expected);
 }
 
-void TestDynamicArray::pushBack_parameterized() {
-    QFETCH(int, initialCapacity);
-    QFETCH(QList<int>, values);
-    QFETCH(int, expectedSize);
-    QFETCH(int, expectedCapacity);
-
-    mylib::DynamicArray arr(initialCapacity);
-    for (int v : values) {
-        arr.pushBack(v);
-    }
-    QCOMPARE(arr.size(), expectedSize);
-    QCOMPARE(arr.capacity(), expectedCapacity);
-}
-
-QTEST_MAIN(TestDynamicArray)
+QTEST_MAIN(TestSorting)
 #include "test_file.moc"

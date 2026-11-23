@@ -3,133 +3,62 @@
 
 namespace mylib {
 
-DynamicArray::DynamicArray() : data_(nullptr), size_(0), capacity_(4) {
-    data_ = new int[capacity_];
+bool ascending(int a, int b) {
+    return a < b;
 }
 
-DynamicArray::DynamicArray(int capacity) : data_(nullptr), size_(0), capacity_(capacity) {
-    if (capacity <= 0) {
-        throw std::invalid_argument("Capacity must be positive");
+bool descending(int a, int b) {
+    return a > b;
+}
+
+void bubbleSort(std::vector<int>& arr, const Comparator& comp) {
+    int n = arr.size();
+    for (int i = 0; i < n - 1; ++i) {
+        bool swapped = false;
+        for (int j = 0; j < n - 1 - i; ++j) {
+            if (comp(arr[j + 1], arr[j])) {
+                std::swap(arr[j], arr[j + 1]);
+                swapped = true;
+            }
+        }
+        if (!swapped) break; // Оптимизация: если массив уже отсортирован
     }
-    data_ = new int[capacity_];
 }
 
-DynamicArray::DynamicArray(const DynamicArray& other)
-    : data_(nullptr), size_(other.size_), capacity_(other.capacity_) {
-    data_ = new int[capacity_];
-    for (int i = 0; i < size_; ++i) {
-        data_[i] = other.data_[i];
+void insertionSort(std::vector<int>& arr, const Comparator& comp) {
+    int n = arr.size();
+    for (int i = 1; i < n; ++i) {
+        int key = arr[i];
+        int j = i - 1;
+        while (j >= 0 && comp(key, arr[j])) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = key;
     }
 }
 
-DynamicArray& DynamicArray::operator=(const DynamicArray& other) {
-    if (this != &other) { // Защита от самоприсваивания
-        delete[] data_;
-        size_ = other.size_;
-        capacity_ = other.capacity_;
-        data_ = new int[capacity_];
-        for (int i = 0; i < size_; ++i) {
-            data_[i] = other.data_[i];
+void mergeSort(std::vector<int>& arr, const Comparator& comp) {
+    if (arr.size() <= 1) return;
+
+    int mid = arr.size() / 2;
+    std::vector<int> left(arr.begin(), arr.begin() + mid);
+    std::vector<int> right(arr.begin() + mid, arr.end());
+
+    mergeSort(left, comp);
+    mergeSort(right, comp);
+
+    // Слияние
+    int i = 0, j = 0, k = 0;
+    while (i < left.size() && j < right.size()) {
+        if (comp(left[i], right[j])) {
+            arr[k++] = left[i++];
+        } else {
+            arr[k++] = right[j++];
         }
     }
-    return *this;
-}
-
-DynamicArray::~DynamicArray() {
-    delete[] data_;
-}
-
-void DynamicArray::pushBack(int value) {
-    if (size_ == capacity_) {
-        resize(capacity_ * 2); // Увеличиваем ёмкость в 2 раза
-    }
-    data_[size_++] = value;
-}
-
-void DynamicArray::popBack() {
-    if (size_ == 0) {
-        throw std::runtime_error("Array is empty");
-    }
-    size_--;
-    // Опционально: уменьшаем ёмкость, если размер упал ниже 1/4
-    if (size_ > 0 && size_ <= capacity_ / 4) {
-        resize(capacity_ / 2);
-    }
-}
-
-void DynamicArray::insertAt(int index, int value) {
-    if (index < 0 || index > size_) {
-        throw std::out_of_range("Index out of bounds");
-    }
-    if (size_ == capacity_) {
-        resize(capacity_ * 2);
-    }
-    // Сдвигаем элементы вправо
-    for (int i = size_; i > index; --i) {
-        data_[i] = data_[i - 1];
-    }
-    data_[index] = value;
-    size_++;
-}
-
-void DynamicArray::removeAt(int index) {
-    if (index < 0 || index >= size_) {
-        throw std::out_of_range("Index out of bounds");
-    }
-    // Сдвигаем элементы влево
-    for (int i = index; i < size_ - 1; ++i) {
-        data_[i] = data_[i + 1];
-    }
-    size_--;
-    if (size_ > 0 && size_ <= capacity_ / 4) {
-        resize(capacity_ / 2);
-    }
-}
-
-int DynamicArray::get(int index) const {
-    if (index < 0 || index >= size_) {
-        throw std::out_of_range("Index out of bounds");
-    }
-    return data_[index];
-}
-
-void DynamicArray::set(int index, int value) {
-    if (index < 0 || index >= size_) {
-        throw std::out_of_range("Index out of bounds");
-    }
-    data_[index] = value;
-}
-
-int DynamicArray::indexOf(int value) const {
-    for (int i = 0; i < size_; ++i) {
-        if (data_[i] == value) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-int DynamicArray::size() const {
-    return size_;
-}
-
-int DynamicArray::capacity() const {
-    return capacity_;
-}
-
-void DynamicArray::clear() {
-    size_ = 0;
-}
-
-void DynamicArray::resize(int newCapacity) {
-    int* newData = new int[newCapacity];
-    int copySize = std::min(size_, newCapacity);
-    for (int i = 0; i < copySize; ++i) {
-        newData[i] = data_[i];
-    }
-    delete[] data_;
-    data_ = newData;
-    capacity_ = newCapacity;
+    while (i < left.size()) arr[k++] = left[i++];
+    while (j < right.size()) arr[k++] = right[j++];
 }
 
 } // namespace mylib

@@ -1,68 +1,26 @@
 #pragma once
+#include <vector>
+#include <functional>
 #include <stdexcept>
 
 namespace mylib {
 
-class DynamicArray {
-public:
-    // Конструктор по умолчанию. Начальная ёмкость = 4.
-    DynamicArray();
+// Тип компаратора: возвращает true, если a должно идти перед b.
+using Comparator = std::function<bool(int, int)>;
 
-    // Конструктор с заданной начальной ёмкостью.
-    // Бросает std::invalid_argument, если capacity <= 0.
-    explicit DynamicArray(int capacity);
+// Пузырьковая сортировка. Стабильная, O(n²).
+void bubbleSort(std::vector<int>& arr, const Comparator& comp);
 
-    // Конструктор копирования (правило трёх).
-    DynamicArray(const DynamicArray& other);
+// Сортировка вставками. Стабильная, O(n²).
+void insertionSort(std::vector<int>& arr, const Comparator& comp);
 
-    // Оператор присваивания (правило трёх).
-    DynamicArray& operator=(const DynamicArray& other);
+// Сортировка слиянием. Стабильная, O(n log n).
+void mergeSort(std::vector<int>& arr, const Comparator& comp);
 
-    // Деструктор (правило трёх).
-    ~DynamicArray();
+// Компаратор по возрастанию (по умолчанию).
+bool ascending(int a, int b);
 
-    // Добавить элемент в конец. При переполнении ёмкость увеличивается в 2 раза.
-    void pushBack(int value);
-
-    // Удалить последний элемент.
-    // Бросает std::runtime_error, если массив пуст.
-    void popBack();
-
-    // Вставить элемент по индексу. Элементы справа сдвигаются.
-    // Бросает std::out_of_range, если index < 0 или index > size().
-    void insertAt(int index, int value);
-
-    // Удалить элемент по индексу. Элементы справа сдвигаются влево.
-    // Бросает std::out_of_range, если index < 0 или index >= size().
-    void removeAt(int index);
-
-    // Получить элемент по индексу.
-    // Бросает std::out_of_range, если index < 0 или index >= size().
-    int get(int index) const;
-
-    // Установить элемент по индексу.
-    // Бросает std::out_of_range, если index < 0 или index >= size().
-    void set(int index, int value);
-
-    // Найти индекс первого вхождения значения. Возвращает -1, если не найдено.
-    int indexOf(int value) const;
-
-    // Текущее количество элементов.
-    int size() const;
-
-    // Текущая ёмкость (сколько элементов можно добавить без перераспределения).
-    int capacity() const;
-
-    // Полная очистка массива (size = 0, capacity не меняется).
-    void clear();
-
-private:
-    int* data_;
-    int size_;
-    int capacity_;
-
-    // Вспомогательный метод для перераспределения памяти.
-    void resize(int newCapacity);
-};
+// Компаратор по убыванию.
+bool descending(int a, int b);
 
 } // namespace mylib
