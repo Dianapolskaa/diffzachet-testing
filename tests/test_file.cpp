@@ -1,147 +1,174 @@
 #include "file.h"
 #include <QtTest/QtTest>
-#include <cmath>
+#include <stdexcept>
 
-class TestRectangle : public QObject
+class TestBankAccount : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // area
-    void area_normal_positive();
-    void area_zeroWidth_zero();
-    void area_negativeDimensions_zero();
+    // Конструктор и геттеры
+    void constructor_default();
+    void constructor_withValues();
+    void constructor_negativeBalance_throws();
 
-    // contains
-    void contains_inside_true();
-    void contains_onBoundary_true();
-    void contains_outside_false();
-    void contains_negativeSizeRect_false();
+    // Пополнение
+    void deposit_positive();
+    void deposit_zero_throws();
+    void deposit_negative_throws();
 
-    // intersects
-    void intersects_overlapping_true();
-    void intersects_touchingEdges_false(); // Граничный случай: касание
-    void intersects_nested_true();
-    void intersects_disjoint_false();
+    // Снятие
+    void withdraw_positive();
+    void withdraw_exactBalance_toZero();
+    void withdraw_moreThanBalance_throws();
+    void withdraw_negative_throws();
 
-    // boundingBox
-    void boundingBox_disjoint_correct();
-    void boundingBox_overlapping_correct();
+    // Проценты
+    void applyInterest_basic();
+    void applyInterest_zeroBalance_noInterest();
+    void applyInterest_zeroRate_noInterest();
+    void applyInterest_negativePeriods_throws();
 
-    // getIntersection
-    void getIntersection_valid_updatesOut();
-    void getIntersection_touching_returnsFalse();
+    // Проверка средств
+    void hasSufficientFunds_true();
+    void hasSufficientFunds_false();
 
-    // Параметризованный тест для contains
-    void contains_parameterized_data();
-    void contains_parameterized();
+    // История
+    void history_tracksOperations();
+
+    // Параметризованный тест
+    void deposit_parameterized_data();
+    void deposit_parameterized();
 };
 
-// --- area ---
-void TestRectangle::area_normal_positive() {
-    QCOMPARE(mylib::area({0, 0, 10, 5}), 50.0);
+// --- Конструктор ---
+void TestBankAccount::constructor_default() {
+    mylib::BankAccount acc;
+    QCOMPARE(acc.getBalance(), 0.0);
+    QCOMPARE(acc.getInterestRate(), 0.0);
 }
 
-void TestRectangle::area_zeroWidth_zero() {
-    QCOMPARE(mylib::area({0, 0, 0, 5}), 0.0);
+void TestBankAccount::constructor_withValues() {
+    mylib::BankAccount acc(1000.0, 0.05);
+    QCOMPARE(acc.getBalance(), 1000.0);
+    QCOMPARE(acc.getInterestRate(), 0.05);
 }
 
-void TestRectangle::area_negativeDimensions_zero() {
-    QCOMPARE(mylib::area({0, 0, -5, 5}), 0.0);
+void TestBankAccount::constructor_negativeBalance_throws() {
+    QVERIFY_EXCEPTION_THROWN(mylib::BankAccount(-100.0, 0.0), std::invalid_argument);
 }
 
-// --- contains ---
-void TestRectangle::contains_inside_true() {
-    QVERIFY(mylib::contains({0, 0, 10, 10}, 5, 5));
+// --- Пополнение ---
+void TestBankAccount::deposit_positive() {
+    mylib::BankAccount acc;
+    acc.deposit(500.0);
+    QCOMPARE(acc.getBalance(), 500.0);
 }
 
-void TestRectangle::contains_onBoundary_true() {
-    // Точка на границе
-    QVERIFY(mylib::contains({0, 0, 10, 10}, 10, 10));
-    QVERIFY(mylib::contains({0, 0, 10, 10}, 0, 0));
+void TestBankAccount::deposit_zero_throws() {
+    mylib::BankAccount acc;
+    QVERIFY_EXCEPTION_THROWN(acc.deposit(0.0), std::invalid_argument);
 }
 
-void TestRectangle::contains_outside_false() {
-    QVERIFY(!mylib::contains({0, 0, 10, 10}, 11, 5));
+void TestBankAccount::deposit_negative_throws() {
+    mylib::BankAccount acc;
+    QVERIFY_EXCEPTION_THROWN(acc.deposit(-10.0), std::invalid_argument);
 }
 
-void TestRectangle::contains_negativeSizeRect_false() {
-    QVERIFY(!mylib::contains({0, 0, -10, 10}, 5, 5));
+// --- Снятие ---
+void TestBankAccount::withdraw_positive() {
+    mylib::BankAccount acc(1000.0);
+    acc.withdraw(300.0);
+    QCOMPARE(acc.getBalance(), 700.0);
 }
 
-// --- intersects ---
-void TestRectangle::intersects_overlapping_true() {
-    QVERIFY(mylib::intersects({0, 0, 10, 10}, {5, 5, 10, 10}));
+void TestBankAccount::withdraw_exactBalance_toZero() {
+    mylib::BankAccount acc(500.0);
+    acc.withdraw(500.0);
+    QCOMPARE(acc.getBalance(), 0.0);
 }
 
-void TestRectangle::intersects_touchingEdges_false() {
-    // Касание правым краем левого (площадь пересечения = 0)
-    QVERIFY(!mylib::intersects({0, 0, 10, 10}, {10, 0, 10, 10}));
+void TestBankAccount::withdraw_moreThanBalance_throws() {
+    mylib::BankAccount acc(100.0);
+    QVERIFY_EXCEPTION_THROWN(acc.withdraw(101.0), std::runtime_error);
 }
 
-void TestRectangle::intersects_nested_true() {
-    // Один полностью внутри другого
-    QVERIFY(mylib::intersects({0, 0, 20, 20}, {5, 5, 5, 5}));
+void TestBankAccount::withdraw_negative_throws() {
+    mylib::BankAccount acc(100.0);
+    QVERIFY_EXCEPTION_THROWN(acc.withdraw(-50.0), std::invalid_argument);
 }
 
-void TestRectangle::intersects_disjoint_false() {
-    QVERIFY(!mylib::intersects({0, 0, 5, 5}, {10, 10, 5, 5}));
+// --- Проценты ---
+void TestBankAccount::applyInterest_basic() {
+    mylib::BankAccount acc(1000.0, 0.1); // 10%
+    acc.applyInterest(2); // 1000 * 0.1 * 2 = 200
+    QCOMPARE(acc.getBalance(), 1200.0);
 }
 
-// --- boundingBox ---
-void TestRectangle::boundingBox_disjoint_correct() {
-    auto box = mylib::boundingBox({0, 0, 5, 5}, {10, 10, 5, 5});
-    QCOMPARE(box.x, 0.0);
-    QCOMPARE(box.y, 0.0);
-    QCOMPARE(box.width, 15.0);
-    QCOMPARE(box.height, 15.0);
+void TestBankAccount::applyInterest_zeroBalance_noInterest() {
+    mylib::BankAccount acc(0.0, 0.1);
+    acc.applyInterest(5);
+    QCOMPARE(acc.getBalance(), 0.0);
+    QVERIFY(acc.getHistory().empty()); // История не должна засоряться нулевыми начислениями
 }
 
-void TestRectangle::boundingBox_overlapping_correct() {
-    auto box = mylib::boundingBox({0, 0, 10, 10}, {5, 5, 10, 10});
-    QCOMPARE(box.width, 15.0);
-    QCOMPARE(box.height, 15.0);
+void TestBankAccount::applyInterest_zeroRate_noInterest() {
+    mylib::BankAccount acc(1000.0, 0.0);
+    acc.applyInterest(5);
+    QCOMPARE(acc.getBalance(), 1000.0);
 }
 
-// --- getIntersection ---
-void TestRectangle::getIntersection_valid_updatesOut() {
-    mylib::Rectangle out;
-    bool res = mylib::getIntersection({0, 0, 10, 10}, {5, 5, 10, 10}, out);
-    QVERIFY(res);
-    QCOMPARE(out.x, 5.0);
-    QCOMPARE(out.y, 5.0);
-    QCOMPARE(out.width, 5.0);
-    QCOMPARE(out.height, 5.0);
+void TestBankAccount::applyInterest_negativePeriods_throws() {
+    mylib::BankAccount acc(1000.0, 0.1);
+    QVERIFY_EXCEPTION_THROWN(acc.applyInterest(-1), std::invalid_argument);
 }
 
-void TestRectangle::getIntersection_touching_returnsFalse() {
-    mylib::Rectangle out = {99, 99, 99, 99}; // Мусорные значения
-    bool res = mylib::getIntersection({0, 0, 10, 10}, {10, 0, 10, 10}, out);
-    QVERIFY(!res);
-    // out не должен был измениться
-    QCOMPARE(out.x, 99.0);
+// --- Проверка средств ---
+void TestBankAccount::hasSufficientFunds_true() {
+    mylib::BankAccount acc(500.0);
+    QVERIFY(acc.hasSufficientFunds(500.0));
+    QVERIFY(acc.hasSufficientFunds(100.0));
+}
+
+void TestBankAccount::hasSufficientFunds_false() {
+    mylib::BankAccount acc(500.0);
+    QVERIFY(!acc.hasSufficientFunds(501.0));
+}
+
+// --- История ---
+void TestBankAccount::history_tracksOperations() {
+    mylib::BankAccount acc(1000.0, 0.1);
+    acc.deposit(500.0);
+    acc.withdraw(200.0);
+    acc.applyInterest(1); // 1300 * 0.1 = 130
+
+    const auto& hist = acc.getHistory();
+    QCOMPARE(hist.size(), 3u);
+    QCOMPARE(hist[0].type, std::string("DEPOSIT"));
+    QCOMPARE(hist[1].type, std::string("WITHDRAW"));
+    QCOMPARE(hist[2].type, std::string("INTEREST"));
 }
 
 // --- Параметризованный тест ---
-void TestRectangle::contains_parameterized_data() {
-    QTest::addColumn<double>("px");
-    QTest::addColumn<double>("py");
-    QTest::addColumn<bool>("expected");
+void TestBankAccount::deposit_parameterized_data() {
+    QTest::addColumn<double>("initial");
+    QTest::addColumn<double>("amount");
+    QTest::addColumn<double>("expected");
 
-    QTest::newRow("center") << 5.0 << 5.0 << true;
-    QTest::newRow("top_left_corner") << 0.0 << 0.0 << true;
-    QTest::newRow("bottom_right_corner") << 10.0 << 10.0 << true;
-    QTest::newRow("outside_right") << 10.1 << 5.0 << false;
-    QTest::newRow("outside_top") << 5.0 << -0.1 << false;
+    QTest::newRow("start0_dep100") << 0.0 << 100.0 << 100.0;
+    QTest::newRow("start500_dep50") << 500.0 << 50.0 << 550.0;
+    QTest::newRow("start1000_dep0.01") << 1000.0 << 0.01 << 1000.01;
 }
 
-void TestRectangle::contains_parameterized() {
-    QFETCH(double, px);
-    QFETCH(double, py);
-    QFETCH(bool, expected);
+void TestBankAccount::deposit_parameterized() {
+    QFETCH(double, initial);
+    QFETCH(double, amount);
+    QFETCH(double, expected);
 
-    QCOMPARE(mylib::contains({0, 0, 10, 10}, px, py), expected);
+    mylib::BankAccount acc(initial);
+    acc.deposit(amount);
+    QCOMPARE(acc.getBalance(), expected);
 }
 
-QTEST_MAIN(TestRectangle)
+QTEST_MAIN(TestBankAccount)
 #include "test_file.moc"

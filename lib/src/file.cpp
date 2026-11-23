@@ -1,65 +1,64 @@
 #include "file.h"
-#include <algorithm>
 
 namespace mylib {
 
-double area(const Rectangle& r) {
-    if (r.width < 0.0 || r.height < 0.0) {
-        return 0.0;
+BankAccount::BankAccount(double initialBalance, double interestRate)
+    : balance_(initialBalance), interestRate_(interestRate) {
+    if (initialBalance < 0.0) {
+        throw std::invalid_argument("Initial balance cannot be negative");
     }
-    return r.width * r.height;
+    if (interestRate < 0.0) {
+        throw std::invalid_argument("Interest rate cannot be negative");
+    }
 }
 
-bool contains(const Rectangle& r, double px, double py) {
-    if (r.width < 0.0 || r.height < 0.0) {
-        return false;
+double BankAccount::getBalance() const { return balance_; }
+double BankAccount::getInterestRate() const { return interestRate_; }
+
+void BankAccount::setInterestRate(double rate) {
+    if (rate < 0.0) {
+        throw std::invalid_argument("Interest rate cannot be negative");
     }
-    return px >= r.x && px <= r.x + r.width &&
-           py >= r.y && py <= r.y + r.height;
+    interestRate_ = rate;
 }
 
-bool intersects(const Rectangle& a, const Rectangle& b) {
-    if (a.width < 0.0 || a.height < 0.0 || b.width < 0.0 || b.height < 0.0) {
-        return false;
+void BankAccount::deposit(double amount) {
+    if (amount <= 0.0) {
+        throw std::invalid_argument("Deposit amount must be positive");
     }
-    // Строгое пересечение: касание краем (например, a.x + a.width == b.x) вернет false
-    return a.x < b.x + b.width &&
-           a.x + a.width > b.x &&
-           a.y < b.y + b.height &&
-           a.y + a.height > b.y;
+    balance_ += amount;
+    history_.push_back({"DEPOSIT", amount});
 }
 
-Rectangle boundingBox(const Rectangle& a, const Rectangle& b) {
-    // Нормализуем размеры на случай отрицательных значений
-    auto norm = [](const Rectangle& r) -> Rectangle {
-        double w = r.width < 0.0 ? 0.0 : r.width;
-        double h = r.height < 0.0 ? 0.0 : r.height;
-        return {r.x, r.y, w, h};
-    };
-
-    Rectangle na = norm(a);
-    Rectangle nb = norm(b);
-
-    double minX = std::min(na.x, nb.x);
-    double minY = std::min(na.y, nb.y);
-    double maxX = std::max(na.x + na.width, nb.x + nb.width);
-    double maxY = std::max(na.y + na.height, nb.y + nb.height);
-
-    return {minX, minY, maxX - minX, maxY - minY};
+void BankAccount::withdraw(double amount) {
+    if (amount <= 0.0) {
+        throw std::invalid_argument("Withdraw amount must be positive");
+    }
+    if (amount > balance_) {
+        throw std::runtime_error("Insufficient funds");
+    }
+    balance_ -= amount;
+    history_.push_back({"WITHDRAW", amount});
 }
 
-bool getIntersection(const Rectangle& a, const Rectangle& b, Rectangle& out) {
-    if (!intersects(a, b)) {
-        return false;
+void BankAccount::applyInterest(int periods) {
+    if (periods <= 0) {
+        throw std::invalid_argument("Periods must be positive");
     }
+    double interest = balance_ * interestRate_ * periods;
+    // Начисляем и добавляем в историю только если есть реальный доход
+    if (interest > 0.0) {
+        balance_ += interest;
+        history_.push_back({"INTEREST", interest});
+    }
+}
 
-    double left = std::max(a.x, b.x);
-    double right = std::min(a.x + a.width, b.x + b.width);
-    double top = std::max(a.y, b.y);
-    double bottom = std::min(a.y + a.height, b.y + b.height);
+const std::vector<Transaction>& BankAccount::getHistory() const {
+    return history_;
+}
 
-    out = {left, top, right - left, bottom - top};
-    return true;
+bool BankAccount::hasSufficientFunds(double amount) const {
+    return balance_ >= amount;
 }
 
 } // namespace mylib

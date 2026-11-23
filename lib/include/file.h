@@ -1,34 +1,51 @@
 #pragma once
+#include <string>
+#include <vector>
+#include <stdexcept>
 
 namespace mylib {
 
-struct Rectangle {
-    double x;      // Координата X левого верхнего угла
-    double y;      // Координата Y левого верхнего угла
-    double width;  // Ширина
-    double height; // Высота
+// Структура для записи в историю операций
+struct Transaction {
+    std::string type; // "DEPOSIT", "WITHDRAW", "INTEREST"
+    double amount;
 };
 
-// Вычисляет площадь прямоугольника.
-// Если width < 0 или height < 0, возвращает 0.0.
-double area(const Rectangle& r);
+class BankAccount {
+public:
+    // Конструктор. Бросает std::invalid_argument, если initialBalance < 0 или interestRate < 0.
+    explicit BankAccount(double initialBalance = 0.0, double interestRate = 0.0);
 
-// Проверяет, принадлежит ли точка (px, py) прямоугольнику.
-// Точки на границе считаются принадлежащими.
-// Если у прямоугольника отрицательные размеры, возвращает false.
-bool contains(const Rectangle& r, double px, double py);
+    double getBalance() const;
+    double getInterestRate() const;
 
-// Проверяет, пересекаются ли два прямоугольника.
-// ВАЖНО: Касание краем (площадь пересечения = 0) НЕ считается пересечением.
-bool intersects(const Rectangle& a, const Rectangle& b);
+    // Изменение процентной ставки. Бросает std::invalid_argument, если rate < 0.
+    void setInterestRate(double rate);
 
-// Вычисляет прямоугольник, охватывающий оба исходных (bounding box).
-// Корректно работает с прямоугольниками, имеющими отрицательные размеры.
-Rectangle boundingBox(const Rectangle& a, const Rectangle& b);
+    // Пополнение счёта. Бросает std::invalid_argument, если amount <= 0.
+    void deposit(double amount);
 
-// Вычисляет прямоугольник пересечения.
-// Возвращает true, если пересечение существует (площадь строго > 0), и записывает результат в out.
-// Если пересечения нет (или только касание), возвращает false.
-bool getIntersection(const Rectangle& a, const Rectangle& b, Rectangle& out);
+    // Снятие со счёта.
+    // Бросает std::invalid_argument, если amount <= 0.
+    // Бросает std::runtime_error, если amount > balance (недостаточно средств).
+    void withdraw(double amount);
+
+    // Начисление процентов за заданное количество периодов.
+    // Формула: balance += balance * interestRate * periods.
+    // Бросает std::invalid_argument, если periods <= 0.
+    // Если начисленные проценты > 0, они добавляются в баланс и историю.
+    void applyInterest(int periods);
+
+    // Проверка достаточности средств.
+    bool hasSufficientFunds(double amount) const;
+
+    // Возвращает константную ссылку на историю операций.
+    const std::vector<Transaction>& getHistory() const;
+
+private:
+    double balance_;
+    double interestRate_;
+    std::vector<Transaction> history_;
+};
 
 } // namespace mylib
