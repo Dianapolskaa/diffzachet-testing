@@ -1,114 +1,147 @@
 #include "file.h"
 #include <QtTest/QtTest>
+#include <cmath>
 
-class TestStringAnalyzer : public QObject
+class TestRectangle : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // countWords
-    void countWords_emptyString_0();
-    void countWords_onlySpaces_0();
-    void countWords_normalString_correct();
-    void countWords_multipleDelimiters_correct();
+    // area
+    void area_normal_positive();
+    void area_zeroWidth_zero();
+    void area_negativeDimensions_zero();
 
-    // countCharOccurrences
-    void countCharOccurrences_found();
-    void countCharOccurrences_notFound();
-    void countCharOccurrences_emptyString_0();
+    // contains
+    void contains_inside_true();
+    void contains_onBoundary_true();
+    void contains_outside_false();
+    void contains_negativeSizeRect_false();
 
-    // mostFrequentLetter
-    void mostFrequentLetter_normalString();
-    void mostFrequentLetter_noLetters_returnsNull();
-    void mostFrequentLetter_allSame();
+    // intersects
+    void intersects_overlapping_true();
+    void intersects_touchingEdges_false(); // Граничный случай: касание
+    void intersects_nested_true();
+    void intersects_disjoint_false();
 
-    // longestStringLength
-    void longestStringLength_emptyArray_0();
-    void longestStringLength_normalArray();
-    void longestStringLength_arrayWithEmptyStrings();
+    // boundingBox
+    void boundingBox_disjoint_correct();
+    void boundingBox_overlapping_correct();
 
-    // Параметризованный тест для countWords
-    void countWords_parameterized_data();
-    void countWords_parameterized();
+    // getIntersection
+    void getIntersection_valid_updatesOut();
+    void getIntersection_touching_returnsFalse();
+
+    // Параметризованный тест для contains
+    void contains_parameterized_data();
+    void contains_parameterized();
 };
 
-// --- countWords ---
-void TestStringAnalyzer::countWords_emptyString_0() {
-    QCOMPARE(mylib::countWords(""), 0);
+// --- area ---
+void TestRectangle::area_normal_positive() {
+    QCOMPARE(mylib::area({0, 0, 10, 5}), 50.0);
 }
 
-void TestStringAnalyzer::countWords_onlySpaces_0() {
-    QCOMPARE(mylib::countWords("   \t  "), 0);
+void TestRectangle::area_zeroWidth_zero() {
+    QCOMPARE(mylib::area({0, 0, 0, 5}), 0.0);
 }
 
-void TestStringAnalyzer::countWords_normalString_correct() {
-    QCOMPARE(mylib::countWords("hello world"), 2);
+void TestRectangle::area_negativeDimensions_zero() {
+    QCOMPARE(mylib::area({0, 0, -5, 5}), 0.0);
 }
 
-void TestStringAnalyzer::countWords_multipleDelimiters_correct() {
-    // Пробелы и табуляции подряд, плюс пробелы в начале и конце
-    QCOMPARE(mylib::countWords("  hello \t\t world  "), 2);
+// --- contains ---
+void TestRectangle::contains_inside_true() {
+    QVERIFY(mylib::contains({0, 0, 10, 10}, 5, 5));
 }
 
-// --- countCharOccurrences ---
-void TestStringAnalyzer::countCharOccurrences_found() {
-    QCOMPARE(mylib::countCharOccurrences("banana", 'a'), 3);
+void TestRectangle::contains_onBoundary_true() {
+    // Точка на границе
+    QVERIFY(mylib::contains({0, 0, 10, 10}, 10, 10));
+    QVERIFY(mylib::contains({0, 0, 10, 10}, 0, 0));
 }
 
-void TestStringAnalyzer::countCharOccurrences_notFound() {
-    QCOMPARE(mylib::countCharOccurrences("apple", 'z'), 0);
+void TestRectangle::contains_outside_false() {
+    QVERIFY(!mylib::contains({0, 0, 10, 10}, 11, 5));
 }
 
-void TestStringAnalyzer::countCharOccurrences_emptyString_0() {
-    QCOMPARE(mylib::countCharOccurrences("", 'a'), 0);
+void TestRectangle::contains_negativeSizeRect_false() {
+    QVERIFY(!mylib::contains({0, 0, -10, 10}, 5, 5));
 }
 
-// --- mostFrequentLetter ---
-void TestStringAnalyzer::mostFrequentLetter_normalString() {
-    QCOMPARE(mylib::mostFrequentLetter("hello world"), 'l');
+// --- intersects ---
+void TestRectangle::intersects_overlapping_true() {
+    QVERIFY(mylib::intersects({0, 0, 10, 10}, {5, 5, 10, 10}));
 }
 
-void TestStringAnalyzer::mostFrequentLetter_noLetters_returnsNull() {
-    // Только цифры и пробелы
-    QCOMPARE(mylib::mostFrequentLetter("123 456"), '\0');
+void TestRectangle::intersects_touchingEdges_false() {
+    // Касание правым краем левого (площадь пересечения = 0)
+    QVERIFY(!mylib::intersects({0, 0, 10, 10}, {10, 0, 10, 10}));
 }
 
-void TestStringAnalyzer::mostFrequentLetter_allSame() {
-    QCOMPARE(mylib::mostFrequentLetter("aaaa"), 'a');
+void TestRectangle::intersects_nested_true() {
+    // Один полностью внутри другого
+    QVERIFY(mylib::intersects({0, 0, 20, 20}, {5, 5, 5, 5}));
 }
 
-// --- longestStringLength ---
-void TestStringAnalyzer::longestStringLength_emptyArray_0() {
-    std::vector<std::string> arr;
-    QCOMPARE(mylib::longestStringLength(arr), 0u);
+void TestRectangle::intersects_disjoint_false() {
+    QVERIFY(!mylib::intersects({0, 0, 5, 5}, {10, 10, 5, 5}));
 }
 
-void TestStringAnalyzer::longestStringLength_normalArray() {
-    std::vector<std::string> arr = {"hi", "hello", "hey"};
-    QCOMPARE(mylib::longestStringLength(arr), 5u);
+// --- boundingBox ---
+void TestRectangle::boundingBox_disjoint_correct() {
+    auto box = mylib::boundingBox({0, 0, 5, 5}, {10, 10, 5, 5});
+    QCOMPARE(box.x, 0.0);
+    QCOMPARE(box.y, 0.0);
+    QCOMPARE(box.width, 15.0);
+    QCOMPARE(box.height, 15.0);
 }
 
-void TestStringAnalyzer::longestStringLength_arrayWithEmptyStrings() {
-    std::vector<std::string> arr = {"", "", "a", ""};
-    QCOMPARE(mylib::longestStringLength(arr), 1u);
+void TestRectangle::boundingBox_overlapping_correct() {
+    auto box = mylib::boundingBox({0, 0, 10, 10}, {5, 5, 10, 10});
+    QCOMPARE(box.width, 15.0);
+    QCOMPARE(box.height, 15.0);
+}
+
+// --- getIntersection ---
+void TestRectangle::getIntersection_valid_updatesOut() {
+    mylib::Rectangle out;
+    bool res = mylib::getIntersection({0, 0, 10, 10}, {5, 5, 10, 10}, out);
+    QVERIFY(res);
+    QCOMPARE(out.x, 5.0);
+    QCOMPARE(out.y, 5.0);
+    QCOMPARE(out.width, 5.0);
+    QCOMPARE(out.height, 5.0);
+}
+
+void TestRectangle::getIntersection_touching_returnsFalse() {
+    mylib::Rectangle out = {99, 99, 99, 99}; // Мусорные значения
+    bool res = mylib::getIntersection({0, 0, 10, 10}, {10, 0, 10, 10}, out);
+    QVERIFY(!res);
+    // out не должен был измениться
+    QCOMPARE(out.x, 99.0);
 }
 
 // --- Параметризованный тест ---
-void TestStringAnalyzer::countWords_parameterized_data() {
-    QTest::addColumn<std::string>("input");
-    QTest::addColumn<int>("expected");
+void TestRectangle::contains_parameterized_data() {
+    QTest::addColumn<double>("px");
+    QTest::addColumn<double>("py");
+    QTest::addColumn<bool>("expected");
 
-    QTest::newRow("single_word") << std::string("word") << 1;
-    QTest::newRow("tabs_and_spaces") << std::string("\tword1 \t word2\t") << 2;
-    QTest::newRow("punctuation_attached") << std::string("hello,world!") << 1; // Знаки препинания не разделяют слова
-    QTest::newRow("mixed_whitespace") << std::string("a b  c   d") << 4;
+    QTest::newRow("center") << 5.0 << 5.0 << true;
+    QTest::newRow("top_left_corner") << 0.0 << 0.0 << true;
+    QTest::newRow("bottom_right_corner") << 10.0 << 10.0 << true;
+    QTest::newRow("outside_right") << 10.1 << 5.0 << false;
+    QTest::newRow("outside_top") << 5.0 << -0.1 << false;
 }
 
-void TestStringAnalyzer::countWords_parameterized() {
-    QFETCH(std::string, input);
-    QFETCH(int, expected);
-    QCOMPARE(mylib::countWords(input), expected);
+void TestRectangle::contains_parameterized() {
+    QFETCH(double, px);
+    QFETCH(double, py);
+    QFETCH(bool, expected);
+
+    QCOMPARE(mylib::contains({0, 0, 10, 10}, px, py), expected);
 }
 
-QTEST_MAIN(TestStringAnalyzer)
+QTEST_MAIN(TestRectangle)
 #include "test_file.moc"

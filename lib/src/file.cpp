@@ -1,58 +1,65 @@
 #include "file.h"
-#include <cctype>
+#include <algorithm>
 
 namespace mylib {
 
-int countWords(const std::string& s) {
-    int count = 0;
-    bool inWord = false;
-    for (char c : s) {
-        if (std::isspace(static_cast<unsigned char>(c))) {
-            inWord = false;
-        } else {
-            if (!inWord) {
-                count++;
-                inWord = true;
-            }
-        }
+double area(const Rectangle& r) {
+    if (r.width < 0.0 || r.height < 0.0) {
+        return 0.0;
     }
-    return count;
+    return r.width * r.height;
 }
 
-int countCharOccurrences(const std::string& s, char c) {
-    int count = 0;
-    for (char ch : s) {
-        if (ch == c) count++;
+bool contains(const Rectangle& r, double px, double py) {
+    if (r.width < 0.0 || r.height < 0.0) {
+        return false;
     }
-    return count;
+    return px >= r.x && px <= r.x + r.width &&
+           py >= r.y && py <= r.y + r.height;
 }
 
-char mostFrequentLetter(const std::string& s) {
-    int freq[256] = {0};
-    char mostFreq = '\0';
-    int maxCount = 0;
-
-    for (char c : s) {
-        if (std::isalpha(static_cast<unsigned char>(c))) {
-            unsigned char idx = static_cast<unsigned char>(c);
-            freq[idx]++;
-            if (freq[idx] > maxCount) {
-                maxCount = freq[idx];
-                mostFreq = c;
-            }
-        }
+bool intersects(const Rectangle& a, const Rectangle& b) {
+    if (a.width < 0.0 || a.height < 0.0 || b.width < 0.0 || b.height < 0.0) {
+        return false;
     }
-    return mostFreq;
+    // Строгое пересечение: касание краем (например, a.x + a.width == b.x) вернет false
+    return a.x < b.x + b.width &&
+           a.x + a.width > b.x &&
+           a.y < b.y + b.height &&
+           a.y + a.height > b.y;
 }
 
-size_t longestStringLength(const std::vector<std::string>& arr) {
-    size_t maxLen = 0;
-    for (const auto& str : arr) {
-        if (str.length() > maxLen) {
-            maxLen = str.length();
-        }
+Rectangle boundingBox(const Rectangle& a, const Rectangle& b) {
+    // Нормализуем размеры на случай отрицательных значений
+    auto norm = [](const Rectangle& r) -> Rectangle {
+        double w = r.width < 0.0 ? 0.0 : r.width;
+        double h = r.height < 0.0 ? 0.0 : r.height;
+        return {r.x, r.y, w, h};
+    };
+
+    Rectangle na = norm(a);
+    Rectangle nb = norm(b);
+
+    double minX = std::min(na.x, nb.x);
+    double minY = std::min(na.y, nb.y);
+    double maxX = std::max(na.x + na.width, nb.x + nb.width);
+    double maxY = std::max(na.y + na.height, nb.y + nb.height);
+
+    return {minX, minY, maxX - minX, maxY - minY};
+}
+
+bool getIntersection(const Rectangle& a, const Rectangle& b, Rectangle& out) {
+    if (!intersects(a, b)) {
+        return false;
     }
-    return maxLen;
+
+    double left = std::max(a.x, b.x);
+    double right = std::min(a.x + a.width, b.x + b.width);
+    double top = std::max(a.y, b.y);
+    double bottom = std::min(a.y + a.height, b.y + b.height);
+
+    out = {left, top, right - left, bottom - top};
+    return true;
 }
 
 } // namespace mylib
