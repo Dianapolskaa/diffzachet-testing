@@ -1,81 +1,50 @@
 #include "file.h"
-#include <cmath>
 
 namespace mylib {
 
-// Округление до копеек (2 знака после запятой)
-static double roundToCents(double value) {
-    return std::round(value * 100.0) / 100.0;
+Board emptyBoard() {
+    Board b;
+    b.fill(Player::None);
+    return b;
 }
 
-double calculateTotal(const std::vector<CartItem>& cart) {
-    double sum = 0.0;
-    for (const auto& item : cart) {
-        if (item.price < 0.0) {
-            throw std::invalid_argument("Negative price for item: " + item.name);
+bool isValidMove(const Board& b, int pos) {
+    return pos >= 0 && pos < 9 && b[pos] == Player::None;
+}
+
+bool applyMove(Board& b, int pos, Player p) {
+    if (!isValidMove(b, pos) || p == Player::None) {
+        return false;
+    }
+    b[pos] = p;
+    return true;
+}
+
+namespace {
+bool checkLine(const Board& b, int a, int c, int d) {
+    return b[a] != Player::None && b[a] == b[c] && b[c] == b[d];
+}
+} // namespace
+
+Outcome evaluate(const Board& b) {
+    static const int lines[8][3] = {
+        {0, 1, 2}, {3, 4, 5}, {6, 7, 8}, // строки
+        {0, 3, 6}, {1, 4, 7}, {2, 5, 8}, // столбцы
+        {0, 4, 8}, {2, 4, 6}             // диагонали
+    };
+
+    for (const auto& l : lines) {
+        if (checkLine(b, l[0], l[1], l[2])) {
+            return b[l[0]] == Player::X ? Outcome::XWins : Outcome::OWins;
         }
-        if (item.quantity < 0) {
-            throw std::invalid_argument("Negative quantity for item: " + item.name);
+    }
+
+    for (Player c : b) {
+        if (c == Player::None) {
+            return Outcome::InProgress;
         }
-        sum += item.price * item.quantity;
     }
-    return roundToCents(sum);
-}
-
-double applyDiscount(double total, double threshold, double percent) {
-    if (total < 0.0) {
-        throw std::invalid_argument("Total cannot be negative");
-    }
-    if (threshold < 0.0) {
-        throw std::invalid_argument("Threshold cannot be negative");
-    }
-    if (percent < 0.0 || percent > 100.0) {
-        throw std::invalid_argument("Discount percent must be in [0, 100]");
-    }
-    if (total < threshold) {
-        return total; // Скидка не применяется
-    }
-    double discounted = total * (1.0 - percent / 100.0);
-    return roundToCents(discounted);
-}
-
-double calculateWithVAT(double total, double vatRate) {
-    if (total < 0.0) {
-        throw std::invalid_argument("Total cannot be negative");
-    }
-    if (vatRate < 0.0) {
-        throw std::invalid_argument("VAT rate cannot be negative");
-    }
-    double withVat = total * (1.0 + vatRate / 100.0);
-    return roundToCents(withVat);
-}
-
-double applyBuy3Pay2(const std::vector<CartItem>& cart) {
-    double sum = 0.0;
-    for (const auto& item : cart) {
-        if (item.price < 0.0) {
-            throw std::invalid_argument("Negative price for item: " + item.name);
-        }
-        if (item.quantity < 0) {
-            throw std::invalid_argument("Negative quantity for item: " + item.name);
-        }
-        // За каждые 3 штуки платим за 2.
-        // Оплачиваемых единиц = quantity - quantity / 3
-        int paidQuantity = item.quantity - item.quantity / 3;
-        sum += item.price * paidQuantity;
-    }
-    return roundToCents(sum);
-}
-
-double calculateFinal(const std::vector<CartItem>& cart,
-                      double discountThreshold, double discountPercent,
-                      double vatRate) {
-    // 1. Сначала акция "3 по цене 2"
-    double afterPromo = applyBuy3Pay2(cart);
-    // 2. Потом скидка (если порог достигнут)
-    double afterDiscount = applyDiscount(afterPromo, discountThreshold, discountPercent);
-    // 3. Потом НДС
-    return calculateWithVAT(afterDiscount, vatRate);
+    return Outcome::Draw;
 }
 
 } // namespace mylib

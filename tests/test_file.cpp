@@ -1,190 +1,156 @@
 #include "file.h"
 #include <QtTest/QtTest>
-#include <cmath>
-#include <stdexcept>
+#include <string>
 
-class TestShoppingCart : public QObject
+// Хелпер: создаёт поле из строки ('X', 'O', '.')
+static mylib::Board fromString(const char* s) {
+    mylib::Board b = mylib::emptyBoard();
+    for (int i = 0; i < 9; ++i) {
+        b[i] = (s[i] == 'X') ? mylib::Player::X :
+                   (s[i] == 'O') ? mylib::Player::O : mylib::Player::None;
+    }
+    return b;
+}
+
+class TestTicTacToe : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // calculateTotal
-    void calculateTotal_emptyCart_zero();
-    void calculateTotal_singleItem();
-    void calculateTotal_multipleItems();
-    void calculateTotal_zeroPrice_zero();
-    void calculateTotal_zeroQuantity_zero();
-    void calculateTotal_roundingCents();
-    void calculateTotal_negativePrice_throws();
-    void calculateTotal_negativeQuantity_throws();
+    // Позитивные: определение победителя
+    void evaluate_emptyBoard_inProgress();
+    void evaluate_winLines_data();
+    void evaluate_winLines();
+    void evaluate_draw_fullBoardNoWinner();
+    void evaluate_inProgress_notFullBoardNoWinner();
 
-    // applyDiscount
-    void applyDiscount_belowThreshold_noDiscount();
-    void applyDiscount_exactlyThreshold_applied();
-    void applyDiscount_aboveThreshold_applied();
-    void applyDiscount_zeroPercent_noChange();
-    void applyDiscount_invalidPercent_throws();
+    // Валидация хода
+    void isValidMove_emptyCell_true();
+    void isValidMove_occupiedCell_false();
+    void isValidMove_outOfBounds_false();
 
-    // calculateWithVAT
-    void calculateWithVAT_zeroRate_noChange();
-    void calculateWithVAT_standard20();
-    void calculateWithVAT_negativeRate_throws();
+    // Применение хода (транзакционность)
+    void applyMove_valid_boardUpdated();
+    void applyMove_invalid_outOfBounds_boardUnchanged();
+    void applyMove_occupiedCell_notOverwritten();
+    void applyMove_nonePlayer_rejected();
 
-    // applyBuy3Pay2
-    void applyBuy3Pay2_lessThan3_noDiscount();
-    void applyBuy3Pay2_exactly3_paysFor2();
-    void applyBuy3Pay2_six_paysFor4();
-    void applyBuy3Pay2_multipleItems();
+    // Сквозной сценарий
+    void gameFlow_alternating_xWinsAtFifthMove();
+    void gameFlow_allNineMoves_draw();
 
-    // calculateFinal (сквозной)
-    void calculateFinal_complexScenario();
-
-    // Параметризованный тест
-    void calculateTotal_parameterized_data();
-    void calculateTotal_parameterized();
+    // Негативные: смешанные состояния
+    void evaluate_mixedBoard_oWins();
 };
 
-// --- calculateTotal ---
-void TestShoppingCart::calculateTotal_emptyCart_zero() {
-    QCOMPARE(mylib::calculateTotal({}), 0.0);
+void TestTicTacToe::evaluate_emptyBoard_inProgress() {
+    QCOMPARE(mylib::evaluate(mylib::emptyBoard()), mylib::Outcome::InProgress);
 }
 
-void TestShoppingCart::calculateTotal_singleItem() {
-    QCOMPARE(mylib::calculateTotal({{"Apple", 10.0, 3}}), 30.0);
+void TestTicTacToe::evaluate_winLines_data() {
+    QTest::addColumn<std::string>("board");
+    QTest::addColumn<mylib::Outcome>("expected");
+    QTest::addColumn<QString>("title");
+
+    // Строки
+    QTest::newRow("top row")    << std::string("XXX.O.O..") << mylib::Outcome::XWins << "top";
+    QTest::newRow("middle row") << std::string(".O.XXX.O.") << mylib::Outcome::XWins << "middle";
+    QTest::newRow("bottom row") << std::string("O.O...XXX") << mylib::Outcome::XWins << "bottom";
+
+    // Столбцы (ИСПРАВЛЕНЫ данные из методички!)
+    QTest::newRow("left col")   << std::string("X.OX.OX..") << mylib::Outcome::XWins << "left";
+    QTest::newRow("mid col")    << std::string(".X..X..X") << mylib::Outcome::XWins << "middle"; // ИСПРАВЛЕНО: было .X.X.X...
+    QTest::newRow("right col")  << std::string("..X..X..X") << mylib::Outcome::XWins << "right";
+
+    // Диагонали
+    QTest::newRow("main diag")  << std::string("X...X...X") << mylib::Outcome::XWins << "main diag";
+    QTest::newRow("anti diag")  << std::string("O.X.X.X..O") << mylib::Outcome::XWins << "anti diag";
 }
 
-void TestShoppingCart::calculateTotal_multipleItems() {
-    std::vector<mylib::CartItem> cart = {
-        {"Apple", 10.0, 3},
-        {"Banana", 5.5, 2}
-    };
-    QCOMPARE(mylib::calculateTotal(cart), 41.0);
+void TestTicTacToe::evaluate_winLines() {
+    QFETCH(std::string, board);
+    QFETCH(mylib::Outcome, expected);
+    QFETCH(QString, title);
+
+    QCOMPARE(mylib::evaluate(fromString(board.c_str())), expected);
 }
 
-void TestShoppingCart::calculateTotal_zeroPrice_zero() {
-    QCOMPARE(mylib::calculateTotal({{"Free", 0.0, 5}}), 0.0);
+void TestTicTacToe::evaluate_draw_fullBoardNoWinner() {
+    QCOMPARE(mylib::evaluate(fromString("XOXOXOOXO")), mylib::Outcome::Draw);
 }
 
-void TestShoppingCart::calculateTotal_zeroQuantity_zero() {
-    QCOMPARE(mylib::calculateTotal({{"Item", 100.0, 0}}), 0.0);
+void TestTicTacToe::evaluate_inProgress_notFullBoardNoWinner() {
+    QCOMPARE(mylib::evaluate(fromString("XO........")), mylib::Outcome::InProgress);
 }
 
-void TestShoppingCart::calculateTotal_roundingCents() {
-    // 3 * 3.333 = 9.999 -> округление до 10.00
-    QCOMPARE(mylib::calculateTotal({{"Item", 3.333, 3}}), 10.0);
+void TestTicTacToe::evaluate_mixedBoard_oWins() {
+    // O выигрывает по анти-диагонали (2, 4, 6) — ИСПРАВЛЕНО: было X.O.O.XO.
+    QCOMPARE(mylib::evaluate(fromString("X.O.O.OX..")), mylib::Outcome::OWins);
 }
 
-void TestShoppingCart::calculateTotal_negativePrice_throws() {
-    QVERIFY_EXCEPTION_THROWN(
-        mylib::calculateTotal({{"Bad", -1.0, 1}}),
-        std::invalid_argument
-        );
+void TestTicTacToe::isValidMove_emptyCell_true() {
+    QVERIFY(mylib::isValidMove(mylib::emptyBoard(), 4));
 }
 
-void TestShoppingCart::calculateTotal_negativeQuantity_throws() {
-    QVERIFY_EXCEPTION_THROWN(
-        mylib::calculateTotal({{"Bad", 10.0, -1}}),
-        std::invalid_argument
-        );
+void TestTicTacToe::isValidMove_occupiedCell_false() {
+    auto b = fromString("X.........");
+    QVERIFY(!mylib::isValidMove(b, 0));
 }
 
-// --- applyDiscount ---
-void TestShoppingCart::applyDiscount_belowThreshold_noDiscount() {
-    QCOMPARE(mylib::applyDiscount(99.0, 100.0, 10.0), 99.0);
+void TestTicTacToe::isValidMove_outOfBounds_false() {
+    auto b = mylib::emptyBoard();
+    QVERIFY(!mylib::isValidMove(b, 9));
+    QVERIFY(!mylib::isValidMove(b, -1));
 }
 
-void TestShoppingCart::applyDiscount_exactlyThreshold_applied() {
-    // 100 * 0.9 = 90
-    QCOMPARE(mylib::applyDiscount(100.0, 100.0, 10.0), 90.0);
+void TestTicTacToe::applyMove_valid_boardUpdated() {
+    auto b = mylib::emptyBoard();
+    QVERIFY(mylib::applyMove(b, 0, mylib::Player::X));
+    QCOMPARE(b[0], mylib::Player::X);
 }
 
-void TestShoppingCart::applyDiscount_aboveThreshold_applied() {
-    // 200 * 0.9 = 180
-    QCOMPARE(mylib::applyDiscount(200.0, 100.0, 10.0), 180.0);
+void TestTicTacToe::applyMove_invalid_outOfBounds_boardUnchanged() {
+    auto b = mylib::emptyBoard();
+    QVERIFY(!mylib::applyMove(b, 9, mylib::Player::X));
+    QCOMPARE(b[8], mylib::Player::None);
 }
 
-void TestShoppingCart::applyDiscount_zeroPercent_noChange() {
-    QCOMPARE(mylib::applyDiscount(150.0, 100.0, 0.0), 150.0);
+void TestTicTacToe::applyMove_occupiedCell_notOverwritten() {
+    auto b = fromString("X.........");
+    QVERIFY(!mylib::applyMove(b, 0, mylib::Player::O));
+    QCOMPARE(b[0], mylib::Player::X);
 }
 
-void TestShoppingCart::applyDiscount_invalidPercent_throws() {
-    QVERIFY_EXCEPTION_THROWN(
-        mylib::applyDiscount(100.0, 50.0, 150.0),
-        std::invalid_argument
-        );
+void TestTicTacToe::applyMove_nonePlayer_rejected() {
+    auto b = mylib::emptyBoard();
+    QVERIFY(!mylib::applyMove(b, 4, mylib::Player::None));
+    QCOMPARE(b[4], mylib::Player::None);
 }
 
-// --- calculateWithVAT ---
-void TestShoppingCart::calculateWithVAT_zeroRate_noChange() {
-    QCOMPARE(mylib::calculateWithVAT(100.0, 0.0), 100.0);
+void TestTicTacToe::gameFlow_alternating_xWinsAtFifthMove() {
+    auto b = mylib::emptyBoard();
+    QVERIFY(mylib::applyMove(b, 0, mylib::Player::X));
+    QVERIFY(mylib::applyMove(b, 3, mylib::Player::O));
+    QVERIFY(mylib::applyMove(b, 1, mylib::Player::X));
+    QVERIFY(mylib::applyMove(b, 4, mylib::Player::O));
+    QVERIFY(mylib::applyMove(b, 2, mylib::Player::X));
+    QCOMPARE(mylib::evaluate(b), mylib::Outcome::XWins);
 }
 
-void TestShoppingCart::calculateWithVAT_standard20() {
-    // 100 * 1.2 = 120
-    QCOMPARE(mylib::calculateWithVAT(100.0, 20.0), 120.0);
+void TestTicTacToe::gameFlow_allNineMoves_draw() {
+    // ИСПРАВЛЕНО: последовательность {0, 2, 1, 3, 5, 4, 6, 7, 8} даёт ничью
+    auto b = mylib::emptyBoard();
+    mylib::Player p = mylib::Player::X;
+
+    int moves[9] = {0, 2, 1, 3, 5, 4, 6, 7, 8};
+    for (int i = 0; i < 9; ++i) {
+        QVERIFY2(mylib::applyMove(b, moves[i], p),
+                 QStringLiteral("ход %1 отклонён").arg(moves[i]).toUtf8().constData());
+        p = (p == mylib::Player::X) ? mylib::Player::O : mylib::Player::X;
+    }
+    // Итоговое поле: X X O / O O X / X O X (нет трёх в ряд)
+    QCOMPARE(mylib::evaluate(b), mylib::Outcome::Draw);
 }
 
-void TestShoppingCart::calculateWithVAT_negativeRate_throws() {
-    QVERIFY_EXCEPTION_THROWN(
-        mylib::calculateWithVAT(100.0, -5.0),
-        std::invalid_argument
-        );
-}
-
-// --- applyBuy3Pay2 ---
-void TestShoppingCart::applyBuy3Pay2_lessThan3_noDiscount() {
-    QCOMPARE(mylib::applyBuy3Pay2({{"Item", 10.0, 2}}), 20.0);
-}
-
-void TestShoppingCart::applyBuy3Pay2_exactly3_paysFor2() {
-    // 3 штуки по 10 -> платим за 2 = 20
-    QCOMPARE(mylib::applyBuy3Pay2({{"Item", 10.0, 3}}), 20.0);
-}
-
-void TestShoppingCart::applyBuy3Pay2_six_paysFor4() {
-    // 6 штук по 10 -> 6 - 6/3 = 4 оплачиваемых = 40
-    QCOMPARE(mylib::applyBuy3Pay2({{"Item", 10.0, 6}}), 40.0);
-}
-
-void TestShoppingCart::applyBuy3Pay2_multipleItems() {
-    std::vector<mylib::CartItem> cart = {
-        {"A", 10.0, 3}, // 2 оплачиваемых = 20
-        {"B", 5.0, 4}   // 4 - 4/3 = 3 оплачиваемых = 15
-    };
-    QCOMPARE(mylib::applyBuy3Pay2(cart), 35.0);
-}
-
-// --- calculateFinal (сквозной) ---
-void TestShoppingCart::calculateFinal_complexScenario() {
-    // Корзина: 6 яблок по 100 руб.
-    // 1. Акция "3 по цене 2": 6 - 6/3 = 4 оплачиваемых = 400 руб.
-    // 2. Скидка 10% при пороге 300: 400 >= 300, значит 400 * 0.9 = 360 руб.
-    // 3. НДС 20%: 360 * 1.2 = 432 руб.
-    std::vector<mylib::CartItem> cart = {{"Apple", 100.0, 6}};
-    QCOMPARE(mylib::calculateFinal(cart, 300.0, 10.0, 20.0), 432.0);
-}
-
-// --- Параметризованный тест ---
-void TestShoppingCart::calculateTotal_parameterized_data() {
-    QTest::addColumn<double>("price");
-    QTest::addColumn<int>("quantity");
-    QTest::addColumn<double>("expected");
-
-    QTest::newRow("zero_price") << 0.0 << 5 << 0.0;
-    QTest::newRow("zero_qty") << 100.0 << 0 << 0.0;
-    QTest::newRow("normal") << 15.5 << 4 << 62.0;
-    QTest::newRow("rounding_up") << 3.333 << 3 << 10.0;
-    QTest::newRow("rounding_down") << 3.331 << 3 << 9.99;
-}
-
-void TestShoppingCart::calculateTotal_parameterized() {
-    QFETCH(double, price);
-    QFETCH(int, quantity);
-    QFETCH(double, expected);
-
-    std::vector<mylib::CartItem> cart = {{"Item", price, quantity}};
-    QCOMPARE(mylib::calculateTotal(cart), expected);
-}
-
-QTEST_MAIN(TestShoppingCart)
+QTEST_MAIN(TestTicTacToe)
 #include "test_file.moc"
