@@ -1,272 +1,287 @@
 #include "file.h"
 #include <QtTest/QtTest>
-#include <cmath>
 #include <stdexcept>
 
-static const double EPS = 1e-9;
-
-class TestMatrix : public QObject
+class TestStackQueue : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // createMatrix
-    void createMatrix_valid();
-    void createMatrix_invalidDimensions_throws();
+    // ===== СТЕК =====
+    void stack_constructor_valid();
+    void stack_constructor_invalid_throws();
+    void stack_push_pop_basic();
+    void stack_peek_basic();
+    void stack_lifo_order();
+    void stack_push_full_throws();
+    void stack_pop_empty_throws();
+    void stack_peek_empty_throws();
+    void stack_isEmpty_isFull();
+    void stack_size_capacity();
+    void stack_works_after_emptied();
 
-    // identityMatrix
-    void identityMatrix_2x2();
-    void identityMatrix_1x1();
-    void identityMatrix_invalid_throws();
-
-    // add
-    void add_basic();
-    void add_zeroMatrix();
-    void add_incompatibleDimensions_throws();
-
-    // multiply
-    void multiply_basic();
-    void multiply_identityMatrix();
-    void multiply_incompatibleDimensions_throws();
-
-    // transpose
-    void transpose_square();
-    void transpose_rectangular();
-    void transpose_1x1();
-
-    // determinant
-    void determinant_1x1();
-    void determinant_2x2();
-    void determinant_3x3();
-    void determinant_singular_zero();
-    void determinant_identity_one();
-    void determinant_nonSquare_throws();
+    // ===== ОЧЕРЕДЬ =====
+    void queue_constructor_valid();
+    void queue_constructor_invalid_throws();
+    void queue_enqueue_dequeue_basic();
+    void queue_front_basic();
+    void queue_fifo_order();
+    void queue_enqueue_full_throws();
+    void queue_dequeue_empty_throws();
+    void queue_front_empty_throws();
+    void queue_isEmpty_isFull();
+    void queue_size_capacity();
+    void queue_works_after_emptied();
 
     // Параметризованные тесты
-    void add_parameterized_data();
-    void add_parameterized();
-    void determinant_parameterized_data();
-    void determinant_parameterized();
+    void stack_push_pop_parameterized_data();
+    void stack_push_pop_parameterized();
+    void queue_enqueue_dequeue_parameterized_data();
+    void queue_enqueue_dequeue_parameterized();
 };
 
-// --- createMatrix ---
-void TestMatrix::createMatrix_valid() {
-    auto m = mylib::createMatrix(3, 4);
-    QCOMPARE(mylib::rows(m), 3);
-    QCOMPARE(mylib::cols(m), 4);
-    QCOMPARE(m[0][0], 0.0);
+// ===== СТЕК =====
+void TestStackQueue::stack_constructor_valid() {
+    mylib::Stack s(5);
+    QCOMPARE(s.capacity(), 5);
+    QCOMPARE(s.size(), 0);
+    QVERIFY(s.isEmpty());
+    QVERIFY(!s.isFull());
 }
 
-void TestMatrix::createMatrix_invalidDimensions_throws() {
-    QVERIFY_EXCEPTION_THROWN(mylib::createMatrix(0, 5), std::invalid_argument);
-    QVERIFY_EXCEPTION_THROWN(mylib::createMatrix(3, -1), std::invalid_argument);
+void TestStackQueue::stack_constructor_invalid_throws() {
+    QVERIFY_EXCEPTION_THROWN(mylib::Stack(0), std::invalid_argument);
+    QVERIFY_EXCEPTION_THROWN(mylib::Stack(-1), std::invalid_argument);
 }
 
-// --- identityMatrix ---
-void TestMatrix::identityMatrix_2x2() {
-    auto m = mylib::identityMatrix(2);
-    QCOMPARE(m[0][0], 1.0);
-    QCOMPARE(m[0][1], 0.0);
-    QCOMPARE(m[1][0], 0.0);
-    QCOMPARE(m[1][1], 1.0);
+void TestStackQueue::stack_push_pop_basic() {
+    mylib::Stack s(3);
+    s.push(10);
+    s.push(20);
+    QCOMPARE(s.pop(), 20);
+    QCOMPARE(s.pop(), 10);
 }
 
-void TestMatrix::identityMatrix_1x1() {
-    auto m = mylib::identityMatrix(1);
-    QCOMPARE(m[0][0], 1.0);
+void TestStackQueue::stack_peek_basic() {
+    mylib::Stack s(3);
+    s.push(42);
+    QCOMPARE(s.peek(), 42);
+    QCOMPARE(s.size(), 1); // peek не удаляет
 }
 
-void TestMatrix::identityMatrix_invalid_throws() {
-    QVERIFY_EXCEPTION_THROWN(mylib::identityMatrix(0), std::invalid_argument);
+void TestStackQueue::stack_lifo_order() {
+    mylib::Stack s(5);
+    s.push(1);
+    s.push(2);
+    s.push(3);
+    QCOMPARE(s.pop(), 3);
+    QCOMPARE(s.pop(), 2);
+    QCOMPARE(s.pop(), 1);
 }
 
-// --- add ---
-void TestMatrix::add_basic() {
-    auto a = mylib::createMatrix(2, 2);
-    auto b = mylib::createMatrix(2, 2);
-    a[0][0] = 1.0; a[0][1] = 2.0;
-    a[1][0] = 3.0; a[1][1] = 4.0;
-    b[0][0] = 5.0; b[0][1] = 6.0;
-    b[1][0] = 7.0; b[1][1] = 8.0;
-
-    auto res = mylib::add(a, b);
-    QCOMPARE(res[0][0], 6.0);
-    QCOMPARE(res[0][1], 8.0);
-    QCOMPARE(res[1][0], 10.0);
-    QCOMPARE(res[1][1], 12.0);
+void TestStackQueue::stack_push_full_throws() {
+    mylib::Stack s(2);
+    s.push(1);
+    s.push(2);
+    QVERIFY_EXCEPTION_THROWN(s.push(3), std::runtime_error);
 }
 
-void TestMatrix::add_zeroMatrix() {
-    auto a = mylib::createMatrix(2, 2);
-    a[0][0] = 5.0;
-    auto zero = mylib::createMatrix(2, 2);
-    auto res = mylib::add(a, zero);
-    QCOMPARE(res[0][0], 5.0);
+void TestStackQueue::stack_pop_empty_throws() {
+    mylib::Stack s(2);
+    QVERIFY_EXCEPTION_THROWN(s.pop(), std::runtime_error);
 }
 
-void TestMatrix::add_incompatibleDimensions_throws() {
-    auto a = mylib::createMatrix(2, 3);
-    auto b = mylib::createMatrix(3, 2);
-    QVERIFY_EXCEPTION_THROWN(mylib::add(a, b), std::invalid_argument);
+void TestStackQueue::stack_peek_empty_throws() {
+    mylib::Stack s(2);
+    QVERIFY_EXCEPTION_THROWN(s.peek(), std::runtime_error);
 }
 
-// --- multiply ---
-void TestMatrix::multiply_basic() {
-    auto a = mylib::createMatrix(2, 2);
-    auto b = mylib::createMatrix(2, 2);
-    a[0][0] = 1.0; a[0][1] = 2.0;
-    a[1][0] = 3.0; a[1][1] = 4.0;
-    b[0][0] = 5.0; b[0][1] = 6.0;
-    b[1][0] = 7.0; b[1][1] = 8.0;
+void TestStackQueue::stack_isEmpty_isFull() {
+    mylib::Stack s(2);
+    QVERIFY(s.isEmpty());
+    QVERIFY(!s.isFull());
 
-    auto res = mylib::multiply(a, b);
-    QCOMPARE(res[0][0], 19.0);
-    QCOMPARE(res[0][1], 22.0);
-    QCOMPARE(res[1][0], 43.0);
-    QCOMPARE(res[1][1], 50.0);
+    s.push(1);
+    QVERIFY(!s.isEmpty());
+    QVERIFY(!s.isFull());
+
+    s.push(2);
+    QVERIFY(!s.isEmpty());
+    QVERIFY(s.isFull());
 }
 
-void TestMatrix::multiply_identityMatrix() {
-    auto a = mylib::createMatrix(2, 2);
-    a[0][0] = 1.0; a[0][1] = 2.0;
-    a[1][0] = 3.0; a[1][1] = 4.0;
-    auto id = mylib::identityMatrix(2);
-
-    auto res = mylib::multiply(a, id);
-    QCOMPARE(res[0][0], 1.0);
-    QCOMPARE(res[0][1], 2.0);
-    QCOMPARE(res[1][0], 3.0);
-    QCOMPARE(res[1][1], 4.0);
+void TestStackQueue::stack_size_capacity() {
+    mylib::Stack s(3);
+    QCOMPARE(s.size(), 0);
+    s.push(1);
+    QCOMPARE(s.size(), 1);
+    s.push(2);
+    QCOMPARE(s.size(), 2);
+    s.pop();
+    QCOMPARE(s.size(), 1);
 }
 
-void TestMatrix::multiply_incompatibleDimensions_throws() {
-    auto a = mylib::createMatrix(2, 3);
-    auto b = mylib::createMatrix(2, 2);
-    QVERIFY_EXCEPTION_THROWN(mylib::multiply(a, b), std::invalid_argument);
+void TestStackQueue::stack_works_after_emptied() {
+    mylib::Stack s(2);
+    s.push(10);
+    s.push(20);
+    s.pop();
+    s.pop();
+    // Теперь стек пуст, но должен работать снова
+    s.push(30);
+    QCOMPARE(s.pop(), 30);
 }
 
-// --- transpose ---
-void TestMatrix::transpose_square() {
-    auto m = mylib::createMatrix(2, 2);
-    m[0][0] = 1.0; m[0][1] = 2.0;
-    m[1][0] = 3.0; m[1][1] = 4.0;
-
-    auto t = mylib::transpose(m);
-    QCOMPARE(t[0][0], 1.0);
-    QCOMPARE(t[0][1], 3.0);
-    QCOMPARE(t[1][0], 2.0);
-    QCOMPARE(t[1][1], 4.0);
+// ===== ОЧЕРЕДЬ =====
+void TestStackQueue::queue_constructor_valid() {
+    mylib::Queue q(5);
+    QCOMPARE(q.capacity(), 5);
+    QCOMPARE(q.size(), 0);
+    QVERIFY(q.isEmpty());
+    QVERIFY(!q.isFull());
 }
 
-void TestMatrix::transpose_rectangular() {
-    auto m = mylib::createMatrix(2, 3);
-    m[0][0] = 1.0; m[0][1] = 2.0; m[0][2] = 3.0;
-    m[1][0] = 4.0; m[1][1] = 5.0; m[1][2] = 6.0;
-
-    auto t = mylib::transpose(m);
-    QCOMPARE(mylib::rows(t), 3);
-    QCOMPARE(mylib::cols(t), 2);
-    QCOMPARE(t[0][0], 1.0);
-    QCOMPARE(t[0][1], 4.0);
-    QCOMPARE(t[2][1], 6.0);
+void TestStackQueue::queue_constructor_invalid_throws() {
+    QVERIFY_EXCEPTION_THROWN(mylib::Queue(0), std::invalid_argument);
+    QVERIFY_EXCEPTION_THROWN(mylib::Queue(-1), std::invalid_argument);
 }
 
-void TestMatrix::transpose_1x1() {
-    auto m = mylib::createMatrix(1, 1);
-    m[0][0] = 5.0;
-    auto t = mylib::transpose(m);
-    QCOMPARE(t[0][0], 5.0);
+void TestStackQueue::queue_enqueue_dequeue_basic() {
+    mylib::Queue q(3);
+    q.enqueue(10);
+    q.enqueue(20);
+    QCOMPARE(q.dequeue(), 10);
+    QCOMPARE(q.dequeue(), 20);
 }
 
-// --- determinant ---
-void TestMatrix::determinant_1x1() {
-    auto m = mylib::createMatrix(1, 1);
-    m[0][0] = 7.0;
-    QCOMPARE(mylib::determinant(m), 7.0);
+void TestStackQueue::queue_front_basic() {
+    mylib::Queue q(3);
+    q.enqueue(42);
+    QCOMPARE(q.front(), 42);
+    QCOMPARE(q.size(), 1); // front не удаляет
 }
 
-void TestMatrix::determinant_2x2() {
-    auto m = mylib::createMatrix(2, 2);
-    m[0][0] = 1.0; m[0][1] = 2.0;
-    m[1][0] = 3.0; m[1][1] = 4.0;
-    QCOMPARE(mylib::determinant(m), -2.0);
+void TestStackQueue::queue_fifo_order() {
+    mylib::Queue q(5);
+    q.enqueue(1);
+    q.enqueue(2);
+    q.enqueue(3);
+    QCOMPARE(q.dequeue(), 1);
+    QCOMPARE(q.dequeue(), 2);
+    QCOMPARE(q.dequeue(), 3);
 }
 
-void TestMatrix::determinant_3x3() {
-    auto m = mylib::createMatrix(3, 3);
-    m[0][0] = 1.0; m[0][1] = 2.0; m[0][2] = 3.0;
-    m[1][0] = 4.0; m[1][1] = 5.0; m[1][2] = 6.0;
-    m[2][0] = 7.0; m[2][1] = 8.0; m[2][2] = 9.0;
-    QCOMPARE(mylib::determinant(m), 0.0); // Вырожденная матрица
+void TestStackQueue::queue_enqueue_full_throws() {
+    mylib::Queue q(2);
+    q.enqueue(1);
+    q.enqueue(2);
+    QVERIFY_EXCEPTION_THROWN(q.enqueue(3), std::runtime_error);
 }
 
-void TestMatrix::determinant_singular_zero() {
-    auto m = mylib::createMatrix(2, 2);
-    m[0][0] = 1.0; m[0][1] = 2.0;
-    m[1][0] = 2.0; m[1][1] = 4.0; // Вторая строка = 2 * первая
-    QCOMPARE(mylib::determinant(m), 0.0);
+void TestStackQueue::queue_dequeue_empty_throws() {
+    mylib::Queue q(2);
+    QVERIFY_EXCEPTION_THROWN(q.dequeue(), std::runtime_error);
 }
 
-void TestMatrix::determinant_identity_one() {
-    auto m = mylib::identityMatrix(3);
-    QCOMPARE(mylib::determinant(m), 1.0);
+void TestStackQueue::queue_front_empty_throws() {
+    mylib::Queue q(2);
+    QVERIFY_EXCEPTION_THROWN(q.front(), std::runtime_error);
 }
 
-void TestMatrix::determinant_nonSquare_throws() {
-    auto m = mylib::createMatrix(2, 3);
-    QVERIFY_EXCEPTION_THROWN(mylib::determinant(m), std::invalid_argument);
+void TestStackQueue::queue_isEmpty_isFull() {
+    mylib::Queue q(2);
+    QVERIFY(q.isEmpty());
+    QVERIFY(!q.isFull());
+
+    q.enqueue(1);
+    QVERIFY(!q.isEmpty());
+    QVERIFY(!q.isFull());
+
+    q.enqueue(2);
+    QVERIFY(!q.isEmpty());
+    QVERIFY(q.isFull());
 }
 
-// --- Параметризованные тесты ---
-void TestMatrix::add_parameterized_data() {
-    QTest::addColumn<double>("a00");
-    QTest::addColumn<double>("b00");
-    QTest::addColumn<double>("expected");
-
-    QTest::newRow("positive") << 1.0 << 2.0 << 3.0;
-    QTest::newRow("negative") << -1.0 << -2.0 << -3.0;
-    QTest::newRow("zero") << 0.0 << 5.0 << 5.0;
-    QTest::newRow("mixed") << 3.0 << -3.0 << 0.0;
+void TestStackQueue::queue_size_capacity() {
+    mylib::Queue q(3);
+    QCOMPARE(q.size(), 0);
+    q.enqueue(1);
+    QCOMPARE(q.size(), 1);
+    q.enqueue(2);
+    QCOMPARE(q.size(), 2);
+    q.dequeue();
+    QCOMPARE(q.size(), 1);
 }
 
-void TestMatrix::add_parameterized() {
-    QFETCH(double, a00);
-    QFETCH(double, b00);
-    QFETCH(double, expected);
-
-    auto a = mylib::createMatrix(1, 1);
-    auto b = mylib::createMatrix(1, 1);
-    a[0][0] = a00;
-    b[0][0] = b00;
-
-    auto res = mylib::add(a, b);
-    QCOMPARE(res[0][0], expected);
+void TestStackQueue::queue_works_after_emptied() {
+    mylib::Queue q(2);
+    q.enqueue(10);
+    q.enqueue(20);
+    q.dequeue();
+    q.dequeue();
+    // Теперь очередь пуста, но должна работать снова
+    q.enqueue(30);
+    QCOMPARE(q.dequeue(), 30);
 }
 
-void TestMatrix::determinant_parameterized_data() {
-    QTest::addColumn<std::vector<std::vector<double>>>("matrix");
-    QTest::addColumn<double>("expected");
+// ===== ПАРАМЕТРИЗОВАННЫЕ ТЕСТЫ =====
+void TestStackQueue::stack_push_pop_parameterized_data() {
+    QTest::addColumn<int>("capacity");
+    QTest::addColumn<QList<int>>("values");
+    QTest::addColumn<QList<int>>("expected_pop_order");
 
-    QTest::newRow("identity_2x2")
-        << std::vector<std::vector<double>>{{1.0, 0.0}, {0.0, 1.0}}
-        << 1.0;
+    QTest::newRow("single_element")
+        << 1 << QList<int>{42} << QList<int>{42};
 
-    QTest::newRow("diagonal_2x2")
-        << std::vector<std::vector<double>>{{2.0, 0.0}, {0.0, 3.0}}
-        << 6.0;
+    QTest::newRow("three_elements")
+        << 3 << QList<int>{1, 2, 3} << QList<int>{3, 2, 1};
 
-    QTest::newRow("singular_2x2")
-        << std::vector<std::vector<double>>{{1.0, 2.0}, {2.0, 4.0}}
-        << 0.0;
+    QTest::newRow("five_elements")
+        << 5 << QList<int>{10, 20, 30, 40, 50} << QList<int>{50, 40, 30, 20, 10};
 }
 
-void TestMatrix::determinant_parameterized() {
-    QFETCH(std::vector<std::vector<double>>, matrix);
-    QFETCH(double, expected);
+void TestStackQueue::stack_push_pop_parameterized() {
+    QFETCH(int, capacity);
+    QFETCH(QList<int>, values);
+    QFETCH(QList<int>, expected_pop_order);
 
-    double det = mylib::determinant(matrix);
-    QVERIFY(std::abs(det - expected) < EPS);
+    mylib::Stack s(capacity);
+    for (int v : values) {
+        s.push(v);
+    }
+    for (int expected : expected_pop_order) {
+        QCOMPARE(s.pop(), expected);
+    }
 }
 
-QTEST_MAIN(TestMatrix)
+void TestStackQueue::queue_enqueue_dequeue_parameterized_data() {
+    QTest::addColumn<int>("capacity");
+    QTest::addColumn<QList<int>>("values");
+    QTest::addColumn<QList<int>>("expected_dequeue_order");
+
+    QTest::newRow("single_element")
+        << 1 << QList<int>{42} << QList<int>{42};
+
+    QTest::newRow("three_elements")
+        << 3 << QList<int>{1, 2, 3} << QList<int>{1, 2, 3};
+
+    QTest::newRow("five_elements")
+        << 5 << QList<int>{10, 20, 30, 40, 50} << QList<int>{10, 20, 30, 40, 50};
+}
+
+void TestStackQueue::queue_enqueue_dequeue_parameterized() {
+    QFETCH(int, capacity);
+    QFETCH(QList<int>, values);
+    QFETCH(QList<int>, expected_dequeue_order);
+
+    mylib::Queue q(capacity);
+    for (int v : values) {
+        q.enqueue(v);
+    }
+    for (int expected : expected_dequeue_order) {
+        QCOMPARE(q.dequeue(), expected);
+    }
+}
+
+QTEST_MAIN(TestStackQueue)
 #include "test_file.moc"

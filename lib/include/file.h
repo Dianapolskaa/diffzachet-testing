@@ -1,36 +1,62 @@
 #pragma once
-#include <vector>
 #include <stdexcept>
 
 namespace mylib {
 
-using Matrix = std::vector<std::vector<double>>;
+// ===== СТЕК (LIFO) =====
+class Stack {
+public:
+    // Конструктор с заданной ёмкостью. Бросает std::invalid_argument, если capacity <= 0.
+    explicit Stack(int capacity);
+     ~Stack();
 
-// Создание нулевой матрицы размера rows x cols.
-// Бросает std::invalid_argument, если rows <= 0 или cols <= 0.
-Matrix createMatrix(int rows, int cols);
+    // Добавить элемент. Бросает std::runtime_error, если стек полон.
+    void push(int value);
 
-// Создание единичной матрицы размера n x n.
-// Бросает std::invalid_argument, если n <= 0.
-Matrix identityMatrix(int n);
+    // Удалить и вернуть верхний элемент. Бросает std::runtime_error, если стек пуст.
+    int pop();
 
-// Сложение матриц.
-// Бросает std::invalid_argument, если размеры не совпадают.
-Matrix add(const Matrix& a, const Matrix& b);
+    // Вернуть верхний элемент без удаления. Бросает std::runtime_error, если стек пуст.
+    int peek() const;
 
-// Умножение матриц.
-// Бросает std::invalid_argument, если количество столбцов a не равно количеству строк b.
-Matrix multiply(const Matrix& a, const Matrix& b);
+    bool isEmpty() const;
+    bool isFull() const;
+    int size() const;
+    int capacity() const;
 
-// Транспонирование матрицы.
-Matrix transpose(const Matrix& m);
+private:
+    int* data_;
+    int capacity_;
+    int size_;
+};
 
-// Вычисление определителя квадратной матрицы.
-// Бросает std::invalid_argument, если матрица не квадратная.
-double determinant(const Matrix& m);
+// ===== ОЧЕРЕДЬ (FIFO) =====
+class Queue {
+public:
+    // Конструктор с заданной ёмкостью. Бросает std::invalid_argument, если capacity <= 0.
+    explicit Queue(int capacity);
+     ~Queue();
 
-// Получение размера матрицы.
-int rows(const Matrix& m);
-int cols(const Matrix& m);
+    // Добавить элемент в конец. Бросает std::runtime_error, если очередь полна.
+    void enqueue(int value);
+
+    // Удалить и вернуть первый элемент. Бросает std::runtime_error, если очередь пуста.
+    int dequeue();
+
+    // Вернуть первый элемент без удаления. Бросает std::runtime_error, если очередь пуста.
+    int front() const;
+
+    bool isEmpty() const;
+    bool isFull() const;
+    int size() const;
+    int capacity() const;
+
+private:
+    int* data_;
+    int capacity_;
+    int front_;
+    int rear_;
+    int size_;
+};
 
 } // namespace mylib
