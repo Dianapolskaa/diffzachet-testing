@@ -1,223 +1,134 @@
 #include "file.h"
 #include <QtTest/QtTest>
+#include <cmath>
+#include <stdexcept>
 
-class TestValidator : public QObject
+class TestSalary : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // Email
-    void isValidEmail_valid();
-    void isValidEmail_emptyString();
-    void isValidEmail_noAt();
-    void isValidEmail_twoAt();
-    void isValidEmail_noDomain();
-    void isValidEmail_domainStartsWithDot();
-    void isValidEmail_noTldLetter();
+    // Налог (позитивные и граничные)
+    void calculateProgressiveTax_zero_zero();
+    void calculateProgressiveTax_belowFirstBracket();
+    void calculateProgressiveTax_exactlyFirstBracketBoundary();
+    void calculateProgressiveTax_inSecondBracket();
+    void calculateProgressiveTax_exactlySecondBracketBoundary();
+    void calculateProgressiveTax_aboveSecondBracket();
 
-    // Телефон
-    void isValidPhone_validFormats();
-    void isValidPhone_emptyString();
-    void isValidPhone_invalidChars();
-    void isValidPhone_tooShort();
-    void isValidPhone_tooLong();
-    void isValidPhone_wrongCountryCode();
+    // Налог (негативные)
+    void calculateProgressiveTax_negative_throws();
 
-    // Пароль
-    void isValidPassword_valid();
-    void isValidPassword_tooShort();
-    void isValidPassword_noLetter();
-    void isValidPassword_noDigit();
-    void isValidPassword_noSpecial();
-    void isValidPassword_boundaryLength();
+    // KPI (позитивные и граничные)
+    void calculateKpiBonus_belowThreshold_zero();
+    void calculateKpiBonus_exactlyFirstThreshold();
+    void calculateKpiBonus_exactlySecondThreshold();
+    void calculateKpiBonus_highKpi();
 
-    // Возраст
-    void isValidAge_valid();
-    void isValidAge_zero();
-    void isValidAge_boundary150();
-    void isValidAge_negative();
-    void isValidAge_tooLarge();
+    // KPI (негативные)
+    void calculateKpiBonus_negativeKpi_throws();
+    void calculateKpiBonus_negativeSalary_throws();
 
-    // Параметризованные тесты
-    void email_parameterized_data();
-    void email_parameterized();
-    void phone_parameterized_data();
-    void phone_parameterized();
-    void password_parameterized_data();
-    void password_parameterized();
+    // Итоговая зарплата
+    void calculateNetSalary_zeroBaseAndKpi();
+    void calculateNetSalary_highKpi_highSalary();
+
+    // Параметризованный тест на границы налоговых ступеней
+    void calculateProgressiveTax_parameterized_data();
+    void calculateProgressiveTax_parameterized();
 };
 
-// --- Email ---
-void TestValidator::isValidEmail_valid() {
-    QVERIFY(mylib::isValidEmail("user@example.com"));
-    QVERIFY(mylib::isValidEmail("john.doe+test@sub.domain.co.uk"));
+// --- Налог ---
+void TestSalary::calculateProgressiveTax_zero_zero() {
+    QCOMPARE(mylib::calculateProgressiveTax(0.0), 0.0);
 }
 
-void TestValidator::isValidEmail_emptyString() {
-    QVERIFY(!mylib::isValidEmail(""));
+void TestSalary::calculateProgressiveTax_belowFirstBracket() {
+    QCOMPARE(mylib::calculateProgressiveTax(10000.0), 1300.0);
 }
 
-void TestValidator::isValidEmail_noAt() {
-    QVERIFY(!mylib::isValidEmail("userexample.com"));
+void TestSalary::calculateProgressiveTax_exactlyFirstBracketBoundary() {
+    // Ровно 50 000 -> 13%
+    QCOMPARE(mylib::calculateProgressiveTax(50000.0), 6500.0);
 }
 
-void TestValidator::isValidEmail_twoAt() {
-    QVERIFY(!mylib::isValidEmail("user@@example.com"));
-    QVERIFY(!mylib::isValidEmail("user@name@example.com"));
+void TestSalary::calculateProgressiveTax_inSecondBracket() {
+    // 75 000 -> 50000*0.13 + 25000*0.15 = 6500 + 3750 = 10250
+    QCOMPARE(mylib::calculateProgressiveTax(75000.0), 10250.0);
 }
 
-void TestValidator::isValidEmail_noDomain() {
-    QVERIFY(!mylib::isValidEmail("user@"));
-    QVERIFY(!mylib::isValidEmail("@example.com"));
+void TestSalary::calculateProgressiveTax_exactlySecondBracketBoundary() {
+    // Ровно 100 000 -> 6500 + 50000*0.15 = 14000
+    QCOMPARE(mylib::calculateProgressiveTax(100000.0), 14000.0);
 }
 
-void TestValidator::isValidEmail_domainStartsWithDot() {
-    QVERIFY(!mylib::isValidEmail("user@.example.com"));
-    QVERIFY(!mylib::isValidEmail("user@example.com."));
+void TestSalary::calculateProgressiveTax_aboveSecondBracket() {
+    // 150 000 -> 14000 + 50000*0.20 = 24000
+    QCOMPARE(mylib::calculateProgressiveTax(150000.0), 24000.0);
 }
 
-void TestValidator::isValidEmail_noTldLetter() {
-    QVERIFY(!mylib::isValidEmail("user@example.123"));
+void TestSalary::calculateProgressiveTax_negative_throws() {
+    QVERIFY_EXCEPTION_THROWN(mylib::calculateProgressiveTax(-100.0), std::invalid_argument);
 }
 
-// --- Телефон ---
-void TestValidator::isValidPhone_validFormats() {
-    QVERIFY(mylib::isValidPhone("+7(999)123-45-67"));
-    QVERIFY(mylib::isValidPhone("8-999-123-45-67"));
-    QVERIFY(mylib::isValidPhone("9991234567"));
-    QVERIFY(mylib::isValidPhone("+7 999 123 45 67"));
+// --- KPI ---
+void TestSalary::calculateKpiBonus_belowThreshold_zero() {
+    QCOMPARE(mylib::calculateKpiBonus(100000.0, 49.0), 0.0);
 }
 
-void TestValidator::isValidPhone_emptyString() {
-    QVERIFY(!mylib::isValidPhone(""));
+void TestSalary::calculateKpiBonus_exactlyFirstThreshold() {
+    // KPI = 50 -> 10%
+    QCOMPARE(mylib::calculateKpiBonus(100000.0, 50.0), 10000.0);
 }
 
-void TestValidator::isValidPhone_invalidChars() {
-    QVERIFY(!mylib::isValidPhone("+7(999)123-45-67a"));
-    QVERIFY(!mylib::isValidPhone("8999123456!"));
+void TestSalary::calculateKpiBonus_exactlySecondThreshold() {
+    // KPI = 80 -> 20%
+    QCOMPARE(mylib::calculateKpiBonus(100000.0, 80.0), 20000.0);
 }
 
-void TestValidator::isValidPhone_tooShort() {
-    QVERIFY(!mylib::isValidPhone("12345"));
+void TestSalary::calculateKpiBonus_highKpi() {
+    QCOMPARE(mylib::calculateKpiBonus(50000.0, 120.0), 10000.0);
 }
 
-void TestValidator::isValidPhone_tooLong() {
-    QVERIFY(!mylib::isValidPhone("+7999123456789"));
+void TestSalary::calculateKpiBonus_negativeKpi_throws() {
+    QVERIFY_EXCEPTION_THROWN(mylib::calculateKpiBonus(100000.0, -5.0), std::invalid_argument);
 }
 
-void TestValidator::isValidPhone_wrongCountryCode() {
-    QVERIFY(!mylib::isValidPhone("+19991234567"));
-    QVERIFY(!mylib::isValidPhone("+59991234567"));
+void TestSalary::calculateKpiBonus_negativeSalary_throws() {
+    QVERIFY_EXCEPTION_THROWN(mylib::calculateKpiBonus(-10000.0, 50.0), std::invalid_argument);
 }
 
-// --- Пароль ---
-void TestValidator::isValidPassword_valid() {
-    QVERIFY(mylib::isValidPassword("Strong1!"));
-    QVERIFY(mylib::isValidPassword("MyP@ssw0rd_2026"));
+// --- Итоговая зарплата ---
+void TestSalary::calculateNetSalary_zeroBaseAndKpi() {
+    QCOMPARE(mylib::calculateNetSalary(0.0, 0.0), 0.0);
 }
 
-void TestValidator::isValidPassword_tooShort() {
-    QVERIFY(!mylib::isValidPassword("Ab1!"));
+void TestSalary::calculateNetSalary_highKpi_highSalary() {
+    // Оклад 80 000, KPI 80 (бонус 20% = 16 000). Gross = 96 000.
+    // Налог: 50000*0.13 + 46000*0.15 = 6500 + 6900 = 13400.
+    // Net = 96000 - 13400 = 82600.
+    QCOMPARE(mylib::calculateNetSalary(80000.0, 80.0), 82600.0);
 }
 
-void TestValidator::isValidPassword_noLetter() {
-    QVERIFY(!mylib::isValidPassword("12345678!@"));
+// --- Параметризованный тест ---
+void TestSalary::calculateProgressiveTax_parameterized_data() {
+    QTest::addColumn<double>("gross");
+    QTest::addColumn<double>("expectedTax");
+
+    QTest::newRow("zero") << 0.0 << 0.0;
+    QTest::newRow("bracket1_max") << 50000.0 << 6500.0;
+    QTest::newRow("bracket2_mid") << 75000.0 << 10250.0;
+    QTest::newRow("bracket2_max") << 100000.0 << 14000.0;
+    QTest::newRow("bracket3_mid") << 150000.0 << 24000.0;
 }
 
-void TestValidator::isValidPassword_noDigit() {
-    QVERIFY(!mylib::isValidPassword("Abcdefgh!@"));
+void TestSalary::calculateProgressiveTax_parameterized() {
+    QFETCH(double, gross);
+    QFETCH(double, expectedTax);
+
+    double result = mylib::calculateProgressiveTax(gross);
+    QVERIFY(std::abs(result - expectedTax) < 1e-9);
 }
 
-void TestValidator::isValidPassword_noSpecial() {
-    QVERIFY(!mylib::isValidPassword("Abcdefgh12"));
-}
-
-void TestValidator::isValidPassword_boundaryLength() {
-    // Ровно 8 символов — валидно
-    QVERIFY(mylib::isValidPassword("Abcdef1!"));
-    // 7 символов — невалидно
-    QVERIFY(!mylib::isValidPassword("Abcd1!"));
-}
-
-// --- Возраст ---
-void TestValidator::isValidAge_valid() {
-    QVERIFY(mylib::isValidAge(25));
-    QVERIFY(mylib::isValidAge(100));
-}
-
-void TestValidator::isValidAge_zero() {
-    QVERIFY(mylib::isValidAge(0));
-}
-
-void TestValidator::isValidAge_boundary150() {
-    QVERIFY(mylib::isValidAge(150));
-}
-
-void TestValidator::isValidAge_negative() {
-    QVERIFY(!mylib::isValidAge(-1));
-    QVERIFY(!mylib::isValidAge(-100));
-}
-
-void TestValidator::isValidAge_tooLarge() {
-    QVERIFY(!mylib::isValidAge(151));
-    QVERIFY(!mylib::isValidAge(200));
-}
-
-// --- Параметризованные тесты ---
-void TestValidator::email_parameterized_data() {
-    QTest::addColumn<std::string>("email");
-    QTest::addColumn<bool>("expected");
-
-    QTest::newRow("valid_simple") << std::string("a@b.com") << true;
-    QTest::newRow("valid_complex") << std::string("user.name+tag@domain.co.uk") << true;
-    QTest::newRow("invalid_empty") << std::string("") << false;
-    QTest::newRow("invalid_no_at") << std::string("userdomain.com") << false;
-    QTest::newRow("invalid_two_at") << std::string("a@b@c.com") << false;
-    QTest::newRow("invalid_no_domain") << std::string("user@") << false;
-    QTest::newRow("invalid_start_dot") << std::string("user@.com") << false;
-}
-
-void TestValidator::email_parameterized() {
-    QFETCH(std::string, email);
-    QFETCH(bool, expected);
-    QCOMPARE(mylib::isValidEmail(email), expected);
-}
-
-void TestValidator::phone_parameterized_data() {
-    QTest::addColumn<std::string>("phone");
-    QTest::addColumn<bool>("expected");
-
-    QTest::newRow("valid_plus7") << std::string("+79991234567") << true;
-    QTest::newRow("valid_8") << std::string("89991234567") << true;
-    QTest::newRow("valid_10digits") << std::string("9991234567") << true;
-    QTest::newRow("invalid_short") << std::string("12345") << false;
-    QTest::newRow("invalid_long") << std::string("+799912345678") << false;
-    QTest::newRow("invalid_country") << std::string("+19991234567") << false;
-}
-
-void TestValidator::phone_parameterized() {
-    QFETCH(std::string, phone);
-    QFETCH(bool, expected);
-    QCOMPARE(mylib::isValidPhone(phone), expected);
-}
-
-void TestValidator::password_parameterized_data() {
-    QTest::addColumn<std::string>("password");
-    QTest::addColumn<bool>("expected");
-
-    QTest::newRow("valid_min") << std::string("Abcdef1!") << true;
-    QTest::newRow("valid_long") << std::string("MyP@ssw0rd_2026") << true;
-    QTest::newRow("invalid_short") << std::string("Ab1!") << false;
-    QTest::newRow("invalid_no_special") << std::string("Abcdefgh12") << false;
-    QTest::newRow("invalid_no_digit") << std::string("Abcdefgh!@") << false;
-    QTest::newRow("invalid_no_letter") << std::string("12345678!@") << false;
-}
-
-void TestValidator::password_parameterized() {
-    QFETCH(std::string, password);
-    QFETCH(bool, expected);
-    QCOMPARE(mylib::isValidPassword(password), expected);
-}
-
-QTEST_MAIN(TestValidator)
+QTEST_MAIN(TestSalary)
 #include "test_file.moc"
