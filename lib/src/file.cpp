@@ -1,41 +1,81 @@
 #include "file.h"
+#include <cmath>
 
 namespace mylib {
 
-double calculateProgressiveTax(double grossSalary) {
-    if (grossSalary < 0.0) {
-        throw std::invalid_argument("Gross salary cannot be negative");
-    }
-
-    double tax = 0.0;
-    if (grossSalary <= 50000.0) {
-        tax = grossSalary * 0.13;
-    } else if (grossSalary <= 100000.0) {
-        tax = 50000.0 * 0.13 + (grossSalary - 50000.0) * 0.15;
-    } else {
-        tax = 50000.0 * 0.13 + 50000.0 * 0.15 + (grossSalary - 100000.0) * 0.20;
-    }
-    return tax;
+// Округление до копеек (2 знака после запятой)
+static double roundToCents(double value) {
+    return std::round(value * 100.0) / 100.0;
 }
 
-double calculateKpiBonus(double baseSalary, double kpi) {
-    if (baseSalary < 0.0 || kpi < 0.0) {
-        throw std::invalid_argument("Base salary and KPI cannot be negative");
+double calculateTotal(const std::vector<CartItem>& cart) {
+    double sum = 0.0;
+    for (const auto& item : cart) {
+        if (item.price < 0.0) {
+            throw std::invalid_argument("Negative price for item: " + item.name);
+        }
+        if (item.quantity < 0) {
+            throw std::invalid_argument("Negative quantity for item: " + item.name);
+        }
+        sum += item.price * item.quantity;
     }
-
-    if (kpi < 50.0) return 0.0;
-    if (kpi < 80.0) return baseSalary * 0.10;
-    return baseSalary * 0.20;
+    return roundToCents(sum);
 }
 
-double calculateNetSalary(double baseSalary, double kpi) {
-    if (baseSalary < 0.0 || kpi < 0.0) {
-        throw std::invalid_argument("Base salary and KPI cannot be negative");
+double applyDiscount(double total, double threshold, double percent) {
+    if (total < 0.0) {
+        throw std::invalid_argument("Total cannot be negative");
     }
+    if (threshold < 0.0) {
+        throw std::invalid_argument("Threshold cannot be negative");
+    }
+    if (percent < 0.0 || percent > 100.0) {
+        throw std::invalid_argument("Discount percent must be in [0, 100]");
+    }
+    if (total < threshold) {
+        return total; // Скидка не применяется
+    }
+    double discounted = total * (1.0 - percent / 100.0);
+    return roundToCents(discounted);
+}
 
-    double gross = baseSalary + calculateKpiBonus(baseSalary, kpi);
-    double tax = calculateProgressiveTax(gross);
-    return gross - tax;
+double calculateWithVAT(double total, double vatRate) {
+    if (total < 0.0) {
+        throw std::invalid_argument("Total cannot be negative");
+    }
+    if (vatRate < 0.0) {
+        throw std::invalid_argument("VAT rate cannot be negative");
+    }
+    double withVat = total * (1.0 + vatRate / 100.0);
+    return roundToCents(withVat);
+}
+
+double applyBuy3Pay2(const std::vector<CartItem>& cart) {
+    double sum = 0.0;
+    for (const auto& item : cart) {
+        if (item.price < 0.0) {
+            throw std::invalid_argument("Negative price for item: " + item.name);
+        }
+        if (item.quantity < 0) {
+            throw std::invalid_argument("Negative quantity for item: " + item.name);
+        }
+        // За каждые 3 штуки платим за 2.
+        // Оплачиваемых единиц = quantity - quantity / 3
+        int paidQuantity = item.quantity - item.quantity / 3;
+        sum += item.price * paidQuantity;
+    }
+    return roundToCents(sum);
+}
+
+double calculateFinal(const std::vector<CartItem>& cart,
+                      double discountThreshold, double discountPercent,
+                      double vatRate) {
+    // 1. Сначала акция "3 по цене 2"
+    double afterPromo = applyBuy3Pay2(cart);
+    // 2. Потом скидка (если порог достигнут)
+    double afterDiscount = applyDiscount(afterPromo, discountThreshold, discountPercent);
+    // 3. Потом НДС
+    return calculateWithVAT(afterDiscount, vatRate);
 }
 
 } // namespace mylib
