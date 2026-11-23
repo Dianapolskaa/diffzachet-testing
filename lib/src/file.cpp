@@ -1,97 +1,92 @@
 #include "file.h"
 #include <cmath>
-#include <sstream>
-#include <iomanip>
+#include <algorithm>
 
 namespace mylib {
 
-Complex::Complex(double real, double imag) : real_(real), imag_(imag) {}
-
-double Complex::real() const { return real_; }
-double Complex::imag() const { return imag_; }
-
-Complex Complex::operator+(const Complex& other) const {
-    return Complex(real_ + other.real_, imag_ + other.imag_);
+// ===== ВЕКТОР 2D =====
+Vector2 add(const Vector2& a, const Vector2& b) {
+    return {a.x + b.x, a.y + b.y};
 }
 
-Complex Complex::operator-(const Complex& other) const {
-    return Complex(real_ - other.real_, imag_ - other.imag_);
+Vector2 sub(const Vector2& a, const Vector2& b) {
+    return {a.x - b.x, a.y - b.y};
 }
 
-Complex Complex::operator*(const Complex& other) const {
-    // (a+bi)(c+di) = (ac-bd) + (ad+bc)i
-    return Complex(
-        real_ * other.real_ - imag_ * other.imag_,
-        real_ * other.imag_ + imag_ * other.real_
-        );
+double dot(const Vector2& a, const Vector2& b) {
+    return a.x * b.x + a.y * b.y;
 }
 
-Complex Complex::operator/(const Complex& other) const {
-    double denom = other.real_ * other.real_ + other.imag_ * other.imag_;
-    if (denom == 0.0) {
-        throw std::invalid_argument("Division by zero complex number");
+double cross(const Vector2& a, const Vector2& b) {
+    return a.x * b.y - a.y * b.x;
+}
+
+double length(const Vector2& v) {
+    return std::sqrt(v.x * v.x + v.y * v.y);
+}
+
+Vector2 normalize(const Vector2& v) {
+    double len = length(v);
+    if (len == 0.0) {
+        throw std::invalid_argument("Cannot normalize zero vector");
     }
-    // (a+bi)/(c+di) = (ac+bd)/(c²+d²) + (bc-ad)/(c²+d²)i
-    return Complex(
-        (real_ * other.real_ + imag_ * other.imag_) / denom,
-        (imag_ * other.real_ - real_ * other.imag_) / denom
-        );
+    return {v.x / len, v.y / len};
 }
 
-bool Complex::operator==(const Complex& other) const {
-    return real_ == other.real_ && imag_ == other.imag_;
-}
-
-bool Complex::operator!=(const Complex& other) const {
-    return !(*this == other);
-}
-
-Complex Complex::conjugate() const {
-    return Complex(real_, -imag_);
-}
-
-double Complex::modulus() const {
-    return std::sqrt(real_ * real_ + imag_ * imag_);
-}
-
-Complex Complex::power(int n) const {
-    if (n == 0) {
-        return Complex(1.0, 0.0); // z^0 = 1
+double angle(const Vector2& a, const Vector2& b) {
+    double lenA = length(a);
+    double lenB = length(b);
+    if (lenA == 0.0 || lenB == 0.0) {
+        throw std::invalid_argument("Cannot compute angle with zero vector");
     }
-
-    if (n < 0) {
-        // z^(-n) = (1/z)^n
-        if (real_ == 0.0 && imag_ == 0.0) {
-            throw std::invalid_argument("Cannot raise zero to negative power");
-        }
-        Complex inv = Complex(1.0, 0.0) / *this;
-        return inv.power(-n);
-    }
-
-    // Формула Муавра: z^n = r^n * (cos(n*θ) + i*sin(n*θ))
-    double r = modulus();
-    double theta = std::atan2(imag_, real_);
-
-    double rPow = std::pow(r, n);
-    return Complex(
-        rPow * std::cos(n * theta),
-        rPow * std::sin(n * theta)
-        );
+    double cosVal = dot(a, b) / (lenA * lenB);
+    // Защита от выхода за [-1, 1] из-за ошибок плавающей точки
+    cosVal = std::clamp(cosVal, -1.0, 1.0);
+    return std::acos(cosVal);
 }
 
-std::string Complex::toString() const {
-    std::ostringstream oss;
-    oss << std::fixed << std::setprecision(2);
+// ===== ВЕКТОР 3D =====
+Vector3 add(const Vector3& a, const Vector3& b) {
+    return {a.x + b.x, a.y + b.y, a.z + b.z};
+}
 
-    if (imag_ == 0.0) {
-        oss << real_;
-    } else if (real_ == 0.0) {
-        oss << imag_ << "i";
-    } else {
-        oss << real_ << (imag_ > 0 ? "+" : "") << imag_ << "i";
+Vector3 sub(const Vector3& a, const Vector3& b) {
+    return {a.x - b.x, a.y - b.y, a.z - b.z};
+}
+
+double dot(const Vector3& a, const Vector3& b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+Vector3 cross(const Vector3& a, const Vector3& b) {
+    return {
+        a.y * b.z - a.z * b.y,
+        a.z * b.x - a.x * b.z,
+        a.x * b.y - a.y * b.x
+    };
+}
+
+double length(const Vector3& v) {
+    return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+}
+
+Vector3 normalize(const Vector3& v) {
+    double len = length(v);
+    if (len == 0.0) {
+        throw std::invalid_argument("Cannot normalize zero vector");
     }
+    return {v.x / len, v.y / len, v.z / len};
+}
 
-    return oss.str();
+double angle(const Vector3& a, const Vector3& b) {
+    double lenA = length(a);
+    double lenB = length(b);
+    if (lenA == 0.0 || lenB == 0.0) {
+        throw std::invalid_argument("Cannot compute angle with zero vector");
+    }
+    double cosVal = dot(a, b) / (lenA * lenB);
+    cosVal = std::clamp(cosVal, -1.0, 1.0);
+    return std::acos(cosVal);
 }
 
 } // namespace mylib

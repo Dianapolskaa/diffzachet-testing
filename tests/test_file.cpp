@@ -3,294 +3,189 @@
 #include <cmath>
 #include <stdexcept>
 
-class TestComplex : public QObject
+static const double EPS = 1e-9;
+
+class TestVector : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // Конструктор и геттеры
-    void constructor_default();
-    void constructor_withValues();
+    // ===== 2D =====
+    void add2D_basic();
+    void sub2D_basic();
+    void dot2D_perpendicular_zero();
+    void dot2D_parallel_positive();
+    void cross2D_basic();
+    void cross2D_anticommutative();
+    void length2D_pythagorean();
+    void length2D_zero();
+    void normalize2D_unitLength();
+    void normalize2D_zeroVector_throws();
+    void angle2D_perpendicular_piOver2();
+    void angle2D_parallel_zero();
+    void angle2D_antiparallel_pi();
+    void angle2D_zeroVector_throws();
 
-    // Сложение и вычитание
-    void add_basic();
-    void add_withZero();
-    void sub_basic();
+    // ===== 3D =====
+    void add3D_basic();
+    void dot3D_basic();
+    void cross3D_basisVectors();
+    void cross3D_parallel_zero();
+    void length3D_basic();
+    void normalize3D_unitLength();
+    void normalize3D_zeroVector_throws();
+    void angle3D_parallel_zero();
 
-    // Умножение
-    void mul_basic();
-    void mul_imaginaryUnit(); // i * i = -1
-    void mul_byZero();
-
-    // Деление
-    void div_basic();
-    void div_byZero_throws();
-
-    // Сопряжение
-    void conjugate_basic();
-    void conjugate_realOnly();
-
-    // Модуль
-    void modulus_basic();
-    void modulus_zero();
-    void modulus_imaginaryOnly();
-
-    // Возведение в степень
-    void power_zero();
-    void power_one();
-    void power_two();
-    void power_negative();
-    void power_zeroToNegative_throws();
-
-    // Сравнение
-    void equality();
-    void inequality();
-
-    // toString
-    void toString_basic();
-    void toString_realOnly();
-    void toString_imaginaryOnly();
-
-    // Параметризованные тесты
-    void add_parameterized_data();
-    void add_parameterized();
-    void mul_parameterized_data();
-    void mul_parameterized();
+    // Параметризованный тест (dot product 2D)
+    void dot2D_parameterized_data();
+    void dot2D_parameterized();
 };
 
-// --- Конструктор ---
-void TestComplex::constructor_default() {
-    mylib::Complex c;
-    QCOMPARE(c.real(), 0.0);
-    QCOMPARE(c.imag(), 0.0);
+// ===== 2D =====
+void TestVector::add2D_basic() {
+    auto res = mylib::add(mylib::Vector2{1.0, 2.0}, mylib::Vector2{3.0, 4.0});
+    QCOMPARE(res.x, 4.0);
+    QCOMPARE(res.y, 6.0);
 }
 
-void TestComplex::constructor_withValues() {
-    mylib::Complex c(3.0, -4.0);
-    QCOMPARE(c.real(), 3.0);
-    QCOMPARE(c.imag(), -4.0);
+void TestVector::sub2D_basic() {
+    auto res = mylib::sub(mylib::Vector2{5.0, 7.0}, mylib::Vector2{2.0, 3.0});
+    QCOMPARE(res.x, 3.0);
+    QCOMPARE(res.y, 4.0);
 }
 
-// --- Сложение/вычитание ---
-void TestComplex::add_basic() {
-    mylib::Complex a(1.0, 2.0);
-    mylib::Complex b(3.0, 4.0);
-    mylib::Complex res = a + b;
-    QCOMPARE(res.real(), 4.0);
-    QCOMPARE(res.imag(), 6.0);
+void TestVector::dot2D_perpendicular_zero() {
+    QCOMPARE(mylib::dot(mylib::Vector2{1.0, 0.0}, mylib::Vector2{0.0, 1.0}), 0.0);
 }
 
-void TestComplex::add_withZero() {
-    mylib::Complex a(5.0, -3.0);
-    mylib::Complex b(0.0, 0.0);
-    QCOMPARE((a + b).real(), 5.0);
-    QCOMPARE((a + b).imag(), -3.0);
+void TestVector::dot2D_parallel_positive() {
+    QCOMPARE(mylib::dot(mylib::Vector2{2.0, 0.0}, mylib::Vector2{3.0, 0.0}), 6.0);
 }
 
-void TestComplex::sub_basic() {
-    mylib::Complex a(5.0, 7.0);
-    mylib::Complex b(2.0, 3.0);
-    mylib::Complex res = a - b;
-    QCOMPARE(res.real(), 3.0);
-    QCOMPARE(res.imag(), 4.0);
+void TestVector::cross2D_basic() {
+    QCOMPARE(mylib::cross(mylib::Vector2{1.0, 0.0}, mylib::Vector2{0.0, 1.0}), 1.0);
 }
 
-// --- Умножение ---
-void TestComplex::mul_basic() {
-    mylib::Complex a(2.0, 3.0);
-    mylib::Complex b(1.0, 4.0);
-    // (2+3i)(1+4i) = 2+8i+3i+12i² = 2+11i-12 = -10+11i
-    mylib::Complex res = a * b;
-    QCOMPARE(res.real(), -10.0);
-    QCOMPARE(res.imag(), 11.0);
+void TestVector::cross2D_anticommutative() {
+    double ab = mylib::cross(mylib::Vector2{2.0, 3.0}, mylib::Vector2{4.0, 5.0});
+    double ba = mylib::cross(mylib::Vector2{4.0, 5.0}, mylib::Vector2{2.0, 3.0});
+    QVERIFY(std::abs(ab + ba) < EPS);
 }
 
-void TestComplex::mul_imaginaryUnit() {
-    // i * i = -1
-    mylib::Complex i(0.0, 1.0);
-    mylib::Complex res = i * i;
-    QCOMPARE(res.real(), -1.0);
-    QCOMPARE(res.imag(), 0.0);
+void TestVector::length2D_pythagorean() {
+    QCOMPARE(mylib::length(mylib::Vector2{3.0, 4.0}), 5.0);
 }
 
-void TestComplex::mul_byZero() {
-    mylib::Complex a(5.0, 3.0);
-    mylib::Complex zero(0.0, 0.0);
-    mylib::Complex res = a * zero;
-    QCOMPARE(res.real(), 0.0);
-    QCOMPARE(res.imag(), 0.0);
+void TestVector::length2D_zero() {
+    QCOMPARE(mylib::length(mylib::Vector2{0.0, 0.0}), 0.0);
 }
 
-// --- Деление ---
-void TestComplex::div_basic() {
-    mylib::Complex a(1.0, 2.0);
-    mylib::Complex b(1.0, 1.0);
-    // (1+2i)/(1+i) = (1+2i)(1-i)/((1+i)(1-i)) = (1-i+2i-2i²)/(1+1) = (3+i)/2 = 1.5+0.5i
-    mylib::Complex res = a / b;
-    QVERIFY(std::abs(res.real() - 1.5) < 1e-9);
-    QVERIFY(std::abs(res.imag() - 0.5) < 1e-9);
+void TestVector::normalize2D_unitLength() {
+    auto n = mylib::normalize(mylib::Vector2{3.0, 4.0});
+    QVERIFY(std::abs(mylib::length(n) - 1.0) < EPS);
+    QVERIFY(std::abs(n.x - 0.6) < EPS);
+    QVERIFY(std::abs(n.y - 0.8) < EPS);
 }
 
-void TestComplex::div_byZero_throws() {
-    mylib::Complex a(1.0, 2.0);
-    mylib::Complex zero(0.0, 0.0);
-    QVERIFY_EXCEPTION_THROWN(a / zero, std::invalid_argument);
+void TestVector::normalize2D_zeroVector_throws() {
+    QVERIFY_EXCEPTION_THROWN(mylib::normalize(mylib::Vector2{0.0, 0.0}), std::invalid_argument);
 }
 
-// --- Сопряжение ---
-void TestComplex::conjugate_basic() {
-    mylib::Complex c(3.0, -4.0);
-    mylib::Complex conj = c.conjugate();
-    QCOMPARE(conj.real(), 3.0);
-    QCOMPARE(conj.imag(), 4.0);
+void TestVector::angle2D_perpendicular_piOver2() {
+    double a = mylib::angle(mylib::Vector2{1.0, 0.0}, mylib::Vector2{0.0, 1.0});
+    QVERIFY(std::abs(a - M_PI / 2.0) < EPS);
 }
 
-void TestComplex::conjugate_realOnly() {
-    mylib::Complex c(5.0, 0.0);
-    mylib::Complex conj = c.conjugate();
-    QCOMPARE(conj.real(), 5.0);
-    QCOMPARE(conj.imag(), 0.0);
+void TestVector::angle2D_parallel_zero() {
+    double a = mylib::angle(mylib::Vector2{2.0, 2.0}, mylib::Vector2{4.0, 4.0});
+    // Без clamp здесь может быть NaN из-за 1.0000000001
+    QVERIFY(std::abs(a) < 1e-6); // Используем более мягкий эпсилон
 }
 
-// --- Модуль ---
-void TestComplex::modulus_basic() {
-    mylib::Complex c(3.0, 4.0);
-    QCOMPARE(c.modulus(), 5.0); // 3-4-5 треугольник
+void TestVector::angle2D_antiparallel_pi() {
+    double a = mylib::angle(mylib::Vector2{1.0, 0.0}, mylib::Vector2{-1.0, 0.0});
+    QVERIFY(std::abs(a - M_PI) < EPS);
 }
 
-void TestComplex::modulus_zero() {
-    mylib::Complex c(0.0, 0.0);
-    QCOMPARE(c.modulus(), 0.0);
+void TestVector::angle2D_zeroVector_throws() {
+    QVERIFY_EXCEPTION_THROWN(
+        mylib::angle(mylib::Vector2{0.0, 0.0}, mylib::Vector2{1.0, 1.0}),
+        std::invalid_argument);
 }
 
-void TestComplex::modulus_imaginaryOnly() {
-    mylib::Complex c(0.0, -7.0);
-    QCOMPARE(c.modulus(), 7.0);
+// ===== 3D =====
+void TestVector::add3D_basic() {
+    auto res = mylib::add(mylib::Vector3{1.0, 2.0, 3.0}, mylib::Vector3{4.0, 5.0, 6.0});
+    QCOMPARE(res.x, 5.0);
+    QCOMPARE(res.y, 7.0);
+    QCOMPARE(res.z, 9.0);
 }
 
-// --- Возведение в степень ---
-void TestComplex::power_zero() {
-    mylib::Complex c(5.0, 3.0);
-    mylib::Complex res = c.power(0);
-    QCOMPARE(res.real(), 1.0);
-    QCOMPARE(res.imag(), 0.0);
+void TestVector::dot3D_basic() {
+    QCOMPARE(mylib::dot(mylib::Vector3{1.0, 2.0, 3.0}, mylib::Vector3{4.0, 5.0, 6.0}), 32.0);
 }
 
-void TestComplex::power_one() {
-    mylib::Complex c(2.0, 3.0);
-    mylib::Complex res = c.power(1);
-    QCOMPARE(res.real(), 2.0);
-    QCOMPARE(res.imag(), 3.0);
+void TestVector::cross3D_basisVectors() {
+    auto res = mylib::cross(mylib::Vector3{1.0, 0.0, 0.0}, mylib::Vector3{0.0, 1.0, 0.0});
+    QCOMPARE(res.x, 0.0);
+    QCOMPARE(res.y, 0.0);
+    QCOMPARE(res.z, 1.0);
 }
 
-void TestComplex::power_two() {
-    mylib::Complex c(1.0, 1.0);
-    // (1+i)² = 1+2i+i² = 2i
-    mylib::Complex res = c.power(2);
-    QVERIFY(std::abs(res.real()) < 1e-9);
-    QVERIFY(std::abs(res.imag() - 2.0) < 1e-9);
+void TestVector::cross3D_parallel_zero() {
+    auto res = mylib::cross(mylib::Vector3{2.0, 2.0, 2.0}, mylib::Vector3{4.0, 4.0, 4.0});
+    QVERIFY(std::abs(res.x) < EPS);
+    QVERIFY(std::abs(res.y) < EPS);
+    QVERIFY(std::abs(res.z) < EPS);
 }
 
-void TestComplex::power_negative() {
-    mylib::Complex i(0.0, 1.0);
-    // i^(-1) = 1/i = -i
-    mylib::Complex res = i.power(-1);
-    QVERIFY(std::abs(res.real()) < 1e-9);
-    QVERIFY(std::abs(res.imag() - (-1.0)) < 1e-9);
+void TestVector::length3D_basic() {
+    QCOMPARE(mylib::length(mylib::Vector3{2.0, 3.0, 6.0}), 7.0);
 }
 
-void TestComplex::power_zeroToNegative_throws() {
-    mylib::Complex zero(0.0, 0.0);
-    QVERIFY_EXCEPTION_THROWN(zero.power(-2), std::invalid_argument);
+void TestVector::normalize3D_unitLength() {
+    auto n = mylib::normalize(mylib::Vector3{0.0, 0.0, 5.0});
+    QCOMPARE(n.x, 0.0);
+    QCOMPARE(n.y, 0.0);
+    QCOMPARE(n.z, 1.0);
 }
 
-// --- Сравнение ---
-void TestComplex::equality() {
-    mylib::Complex a(1.0, 2.0);
-    mylib::Complex b(1.0, 2.0);
-    QVERIFY(a == b);
+void TestVector::normalize3D_zeroVector_throws() {
+    QVERIFY_EXCEPTION_THROWN(
+        mylib::normalize(mylib::Vector3{0.0, 0.0, 0.0}),
+        std::invalid_argument);
 }
 
-void TestComplex::inequality() {
-    mylib::Complex a(1.0, 2.0);
-    mylib::Complex b(1.0, 3.0);
-    QVERIFY(a != b);
+void TestVector::angle3D_parallel_zero() {
+    double a = mylib::angle(mylib::Vector3{1.0, 1.0, 1.0}, mylib::Vector3{2.0, 2.0, 2.0});
+    QVERIFY(std::abs(a) < EPS);
 }
 
-// --- toString ---
-void TestComplex::toString_basic() {
-    mylib::Complex c(3.0, 4.0);
-    QCOMPARE(c.toString(), std::string("3.00+4.00i"));
+// ===== Параметризованный тест =====
+void TestVector::dot2D_parameterized_data() {
+    QTest::addColumn<double>("ax");
+    QTest::addColumn<double>("ay");
+    QTest::addColumn<double>("bx");
+    QTest::addColumn<double>("by");
+    QTest::addColumn<double>("expected");
+
+    QTest::newRow("orthogonal") << 1.0 << 0.0 << 0.0 << 1.0 << 0.0;
+    QTest::newRow("parallel")   << 2.0 << 0.0 << 3.0 << 0.0 << 6.0;
+    QTest::newRow("mixed")      << 1.0 << 2.0 << 3.0 << 4.0 << 11.0;
+    QTest::newRow("negative")   << -1.0 << 2.0 << 3.0 << -4.0 << -11.0;
+    QTest::newRow("zero")       << 0.0 << 0.0 << 5.0 << 5.0 << 0.0;
 }
 
-void TestComplex::toString_realOnly() {
-    mylib::Complex c(5.0, 0.0);
-    QCOMPARE(c.toString(), std::string("5.00"));
+void TestVector::dot2D_parameterized() {
+    QFETCH(double, ax);
+    QFETCH(double, ay);
+    QFETCH(double, bx);
+    QFETCH(double, by);
+    QFETCH(double, expected);
+
+    double res = mylib::dot(mylib::Vector2{ax, ay}, mylib::Vector2{bx, by});
+    QVERIFY(std::abs(res - expected) < EPS);
 }
 
-void TestComplex::toString_imaginaryOnly() {
-    mylib::Complex c(0.0, -2.0);
-    QCOMPARE(c.toString(), std::string("-2.00i"));
-}
-
-// --- Параметризованные тесты ---
-void TestComplex::add_parameterized_data() {
-    QTest::addColumn<double>("a_real");
-    QTest::addColumn<double>("a_imag");
-    QTest::addColumn<double>("b_real");
-    QTest::addColumn<double>("b_imag");
-    QTest::addColumn<double>("exp_real");
-    QTest::addColumn<double>("exp_imag");
-
-    QTest::newRow("positive") << 1.0 << 2.0 << 3.0 << 4.0 << 4.0 << 6.0;
-    QTest::newRow("negative") << -1.0 << -2.0 << 1.0 << 2.0 << 0.0 << 0.0;
-    QTest::newRow("mixed") << 5.0 << -3.0 << -2.0 << 7.0 << 3.0 << 4.0;
-}
-
-void TestComplex::add_parameterized() {
-    QFETCH(double, a_real);
-    QFETCH(double, a_imag);
-    QFETCH(double, b_real);
-    QFETCH(double, b_imag);
-    QFETCH(double, exp_real);
-    QFETCH(double, exp_imag);
-
-    mylib::Complex a(a_real, a_imag);
-    mylib::Complex b(b_real, b_imag);
-    mylib::Complex res = a + b;
-
-    QCOMPARE(res.real(), exp_real);
-    QCOMPARE(res.imag(), exp_imag);
-}
-
-void TestComplex::mul_parameterized_data() {
-    QTest::addColumn<double>("a_real");
-    QTest::addColumn<double>("a_imag");
-    QTest::addColumn<double>("b_real");
-    QTest::addColumn<double>("b_imag");
-    QTest::addColumn<double>("exp_real");
-    QTest::addColumn<double>("exp_imag");
-
-    QTest::newRow("i*i") << 0.0 << 1.0 << 0.0 << 1.0 << -1.0 << 0.0;
-    QTest::newRow("real*real") << 2.0 << 0.0 << 3.0 << 0.0 << 6.0 << 0.0;
-    QTest::newRow("complex") << 1.0 << 1.0 << 1.0 << -1.0 << 2.0 << 0.0; // (1+i)(1-i) = 2
-}
-
-void TestComplex::mul_parameterized() {
-    QFETCH(double, a_real);
-    QFETCH(double, a_imag);
-    QFETCH(double, b_real);
-    QFETCH(double, b_imag);
-    QFETCH(double, exp_real);
-    QFETCH(double, exp_imag);
-
-    mylib::Complex a(a_real, a_imag);
-    mylib::Complex b(b_real, b_imag);
-    mylib::Complex res = a * b;
-
-    QCOMPARE(res.real(), exp_real);
-    QCOMPARE(res.imag(), exp_imag);
-}
-
-QTEST_MAIN(TestComplex)
+QTEST_MAIN(TestVector)
 #include "test_file.moc"
