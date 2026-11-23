@@ -2,37 +2,33 @@
 
 namespace mylib {
 
-enum class TriangleType {
-    Invalid,        // Не существует (в т.ч. нулевые/отрицательные стороны или нарушение неравенства)
-    Equilateral,    // Равносторонний
-    Isosceles,      // Равнобедренный
-    Scalene         // Разносторонний
+enum class WaterState {
+    Ice,        // Лёд (ниже 0°C)
+    Liquid,     // Жидкость (0°C до 100°C)
+    Steam       // Пар (выше 100°C)
 };
 
-enum class AngleType {
-    Invalid,        // Не существует
-    Acute,          // Остроугольный
-    Right,          // Прямоугольный
-    Obtuse          // Тупоугольный
-};
+// Перевод Цельсий → Фаренгейт
+// Формула: F = C * 9/5 + 32
+double celsiusToFahrenheit(double celsius);
 
-// Проверка существования треугольника по трём сторонам (неравенство треугольника).
-// Порядок сторон не влияет на результат.
-// Возвращает true, если a, b, c > 0 и a+b>c, a+c>b, b+c>a.
-bool exists(double a, double b, double c);
+// Перевод Цельсий → Кельвин
+// Формула: K = C + 273.15
+// Если celsius < -273.15 (ниже абсолютного нуля), возвращает -999.0
+double celsiusToKelvin(double celsius);
 
-// Определение вида по сторонам.
-// Если треугольник не существует, возвращает TriangleType::Invalid.
-// Порядок сторон не влияет на результат.
-TriangleType typeBySides(double a, double b, double c);
+// Перевод Фаренгейт → Цельсий
+// Формула: C = (F - 32) * 5/9
+double fahrenheitToCelsius(double fahrenheit);
 
-// Определение вида по углам.
-// Если треугольник не существует, возвращает AngleType::Invalid.
-// Порядок сторон не влияет на результат.
-AngleType typeByAngles(double a, double b, double c);
+// Перевод Кельвин → Цельсий
+// Формула: C = K - 273.15
+// Если kelvin < 0, возвращает -999.0
+double kelvinToCelsius(double kelvin);
 
-// Площадь по формуле Герона.
-// Если треугольник не существует, возвращает -1.0.
-double area(double a, double b, double c);
+// Классификация состояния воды по температуре в Цельсиях.
+// Граничные условия задокументированы: 0°C считается льдом (точка замерзания),
+// 100°C — паром (точка кипения).
+WaterState classifyWaterState(double celsius);
 
 } // namespace mylib
