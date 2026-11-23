@@ -1,200 +1,158 @@
 #include "file.h"
 #include <QtTest/QtTest>
+#include <stdexcept>
 
-class TestStrings : public QObject
+class TestGcdLcm : public QObject
 {
     Q_OBJECT
 
 private slots:
-    // stringLength
-    void stringLength_emptyString();
-    void stringLength_singleChar();
-    void stringLength_normalString();
+    // --- НОД (GCD) ---
+    void gcd_positiveNumbers();
+    void gcd_oneIsZero();
+    void gcd_bothZero();
+    void gcd_negativeNumbers();
+    void gcd_coprimeNumbers();
+    void gcd_equalNumbers();
 
-    // concatenate
-    void concatenate_twoStrings();
-    void concatenate_emptyStrings();
-    void concatenate_oneEmpty();
+    // --- НОК (LCM) ---
+    void lcm_positiveNumbers();
+    void lcm_oneIsZero();
+    void lcm_negativeNumbers();
+    void lcm_overflow_throws();
 
-    // reverse
-    void reverse_emptyString();
-    void reverse_singleChar();
-    void reverse_normalString();
-    void reverse_palindrome();
+    // --- Разложение на множители ---
+    void primeFactors_basic();
+    void primeFactors_primeNumber();
+    void primeFactors_oneOrLess();
+    void primeFactors_negativeNumber();
 
-    // toUpperCase / toLowerCase (параметризованные)
-    void caseConversion_data();
-    void caseConversion();
-
-    // findSubstring
-    void findSubstring_found();
-    void findSubstring_notFound();
-    void findSubstring_emptySubstring();
-    void findSubstring_substringLongerThanString();
-    void findSubstring_atBeginning();
-    void findSubstring_atEnd();
-
-    // split (параметризованные)
-    void split_data();
-    void split();
-
-    // Граничные случаи split
-    void split_delimiterAtStart();
-    void split_delimiterAtEnd();
-    void split_multipleDelimiters();
-    void split_onlyDelimiters();
+    // --- Параметризованные тесты ---
+    void gcd_parameterized_data();
+    void gcd_parameterized();
+    void lcm_parameterized_data();
+    void lcm_parameterized();
 };
 
-// --- stringLength ---
-void TestStrings::stringLength_emptyString() {
-    QCOMPARE(mylib::stringLength(""), 0u);
+// --- НОД ---
+void TestGcdLcm::gcd_positiveNumbers() {
+    QCOMPARE(mylib::gcd(12, 8), 4LL);
 }
 
-void TestStrings::stringLength_singleChar() {
-    QCOMPARE(mylib::stringLength("a"), 1u);
+void TestGcdLcm::gcd_oneIsZero() {
+    QCOMPARE(mylib::gcd(5, 0), 5LL);
+    QCOMPARE(mylib::gcd(0, 7), 7LL);
 }
 
-void TestStrings::stringLength_normalString() {
-    QCOMPARE(mylib::stringLength("hello"), 5u);
+void TestGcdLcm::gcd_bothZero() {
+    QCOMPARE(mylib::gcd(0, 0), 0LL);
 }
 
-// --- concatenate ---
-void TestStrings::concatenate_twoStrings() {
-    QCOMPARE(mylib::concatenate("hello", " world"), std::string("hello world"));
+void TestGcdLcm::gcd_negativeNumbers() {
+    QCOMPARE(mylib::gcd(-12, 8), 4LL);
+    QCOMPARE(mylib::gcd(-12, -8), 4LL);
 }
 
-void TestStrings::concatenate_emptyStrings() {
-    QCOMPARE(mylib::concatenate("", ""), std::string(""));
+void TestGcdLcm::gcd_coprimeNumbers() {
+    QCOMPARE(mylib::gcd(7, 9), 1LL);
 }
 
-void TestStrings::concatenate_oneEmpty() {
-    QCOMPARE(mylib::concatenate("hello", ""), std::string("hello"));
-    QCOMPARE(mylib::concatenate("", "world"), std::string("world"));
+void TestGcdLcm::gcd_equalNumbers() {
+    QCOMPARE(mylib::gcd(15, 15), 15LL);
 }
 
-// --- reverse ---
-void TestStrings::reverse_emptyString() {
-    QCOMPARE(mylib::reverse(""), std::string(""));
+// --- НОК ---
+void TestGcdLcm::lcm_positiveNumbers() {
+    QCOMPARE(mylib::lcm(4, 6), 12LL);
 }
 
-void TestStrings::reverse_singleChar() {
-    QCOMPARE(mylib::reverse("a"), std::string("a"));
+void TestGcdLcm::lcm_oneIsZero() {
+    QCOMPARE(mylib::lcm(5, 0), 0LL);
+    QCOMPARE(mylib::lcm(0, 7), 0LL);
 }
 
-void TestStrings::reverse_normalString() {
-    QCOMPARE(mylib::reverse("hello"), std::string("olleh"));
+void TestGcdLcm::lcm_negativeNumbers() {
+    QCOMPARE(mylib::lcm(-4, 6), 12LL);
 }
 
-void TestStrings::reverse_palindrome() {
-    QCOMPARE(mylib::reverse("madam"), std::string("madam"));
+void TestGcdLcm::lcm_overflow_throws() {
+    // Два больших взаимно простых числа, чьё произведение > LLONG_MAX (~9.22e18).
+    // 3037000493 и 3037000507 — оба простые, gcd = 1, lcm = произведение ≈ 9.22e18 + переполнение.
+    QVERIFY_EXCEPTION_THROWN(
+        mylib::lcm(3037000493LL, 3037000507LL),
+        std::overflow_error
+        );
 }
 
-// --- caseConversion (параметризованный) ---
-void TestStrings::caseConversion_data() {
-    QTest::addColumn<std::string>("input");
-    QTest::addColumn<std::string>("upper");
-    QTest::addColumn<std::string>("lower");
-
-    QTest::newRow("hello") << std::string("hello") << std::string("HELLO") << std::string("hello");
-    QTest::newRow("WORLD") << std::string("WORLD") << std::string("WORLD") << std::string("world");
-    QTest::newRow("MiXeD") << std::string("MiXeD") << std::string("MIXED") << std::string("mixed");
-    QTest::newRow("empty") << std::string("") << std::string("") << std::string("");
-    QTest::newRow("numbers123") << std::string("abc123") << std::string("ABC123") << std::string("abc123");
+// --- Разложение на множители ---
+void TestGcdLcm::primeFactors_basic() {
+    auto factors = mylib::primeFactors(12);
+    QCOMPARE(factors.size(), 3u);
+    QCOMPARE(factors[0], 2LL);
+    QCOMPARE(factors[1], 2LL);
+    QCOMPARE(factors[2], 3LL);
 }
 
-void TestStrings::caseConversion() {
-    QFETCH(std::string, input);
-    QFETCH(std::string, upper);
-    QFETCH(std::string, lower);
-
-    QCOMPARE(mylib::toUpperCase(input), upper);
-    QCOMPARE(mylib::toLowerCase(input), lower);
+void TestGcdLcm::primeFactors_primeNumber() {
+    auto factors = mylib::primeFactors(13);
+    QCOMPARE(factors.size(), 1u);
+    QCOMPARE(factors[0], 13LL);
 }
 
-// --- findSubstring ---
-void TestStrings::findSubstring_found() {
-    QCOMPARE(mylib::findSubstring("hello world", "world"), 6);
+void TestGcdLcm::primeFactors_oneOrLess() {
+    // Пустой вектор только для -1, 0, 1 (после взятия модуля остаётся <= 1)
+    QVERIFY(mylib::primeFactors(1).empty());
+    QVERIFY(mylib::primeFactors(0).empty());
+    QVERIFY(mylib::primeFactors(-1).empty());
 }
 
-void TestStrings::findSubstring_notFound() {
-    QCOMPARE(mylib::findSubstring("hello", "xyz"), -1);
+void TestGcdLcm::primeFactors_negativeNumber() {
+    // Для отрицательных берём модуль: -10 -> {2, 5}
+    auto factors = mylib::primeFactors(-10);
+    QCOMPARE(factors.size(), 2u);
+    QCOMPARE(factors[0], 2LL);
+    QCOMPARE(factors[1], 5LL);
+
+    // -5 -> {5} (не пустой!)
+    auto factors5 = mylib::primeFactors(-5);
+    QCOMPARE(factors5.size(), 1u);
+    QCOMPARE(factors5[0], 5LL);
 }
 
-void TestStrings::findSubstring_emptySubstring() {
-    QCOMPARE(mylib::findSubstring("hello", ""), 0);
+// --- Параметризованные тесты ---
+void TestGcdLcm::gcd_parameterized_data() {
+    QTest::addColumn<long long>("a");
+    QTest::addColumn<long long>("b");
+    QTest::addColumn<long long>("expected");
+
+    QTest::newRow("large_primes") << 1000000007LL << 1000000009LL << 1LL;
+    QTest::newRow("one_and_n") << 1LL << 100LL << 1LL;
+    QTest::newRow("multiple") << 100LL << 25LL << 25LL;
 }
 
-void TestStrings::findSubstring_substringLongerThanString() {
-    QCOMPARE(mylib::findSubstring("hi", "hello"), -1);
+void TestGcdLcm::gcd_parameterized() {
+    QFETCH(long long, a);
+    QFETCH(long long, b);
+    QFETCH(long long, expected);
+    QCOMPARE(mylib::gcd(a, b), expected);
 }
 
-void TestStrings::findSubstring_atBeginning() {
-    QCOMPARE(mylib::findSubstring("hello world", "hello"), 0);
+void TestGcdLcm::lcm_parameterized_data() {
+    QTest::addColumn<long long>("a");
+    QTest::addColumn<long long>("b");
+    QTest::addColumn<long long>("expected");
+
+    QTest::newRow("coprime") << 3LL << 7LL << 21LL;
+    QTest::newRow("multiple") << 4LL << 8LL << 8LL;
+    QTest::newRow("large") << 1000000LL << 1000000LL << 1000000LL;
 }
 
-void TestStrings::findSubstring_atEnd() {
-    QCOMPARE(mylib::findSubstring("hello world", "world"), 6);
+void TestGcdLcm::lcm_parameterized() {
+    QFETCH(long long, a);
+    QFETCH(long long, b);
+    QFETCH(long long, expected);
+    QCOMPARE(mylib::lcm(a, b), expected);
 }
 
-// --- split (параметризованный) ---
-void TestStrings::split_data() {
-    QTest::addColumn<std::string>("input");
-    QTest::addColumn<char>("delimiter");
-    QTest::addColumn<std::vector<std::string>>("expected");
-
-    QTest::newRow("simple")
-        << std::string("a,b,c") << ','
-        << std::vector<std::string>{"a", "b", "c"};
-
-    QTest::newRow("noDelimiter")
-        << std::string("hello") << ','
-        << std::vector<std::string>{"hello"};
-
-    QTest::newRow("emptyString")
-        << std::string("") << ','
-        << std::vector<std::string>{};
-}
-
-void TestStrings::split() {
-    QFETCH(std::string, input);
-    QFETCH(char, delimiter);
-    QFETCH(std::vector<std::string>, expected);
-
-    QCOMPARE(mylib::split(input, delimiter), expected);
-}
-
-// --- Граничные случаи split ---
-void TestStrings::split_delimiterAtStart() {
-    auto result = mylib::split(",a,b", ',');
-    QCOMPARE(result.size(), 3u);
-    QCOMPARE(result[0], std::string(""));
-    QCOMPARE(result[1], std::string("a"));
-    QCOMPARE(result[2], std::string("b"));
-}
-
-void TestStrings::split_delimiterAtEnd() {
-    auto result = mylib::split("a,b,", ',');
-    QCOMPARE(result.size(), 3u);
-    QCOMPARE(result[0], std::string("a"));
-    QCOMPARE(result[1], std::string("b"));
-    QCOMPARE(result[2], std::string(""));
-}
-
-void TestStrings::split_multipleDelimiters() {
-    auto result = mylib::split("a,,b", ',');
-    QCOMPARE(result.size(), 3u);
-    QCOMPARE(result[0], std::string("a"));
-    QCOMPARE(result[1], std::string(""));
-    QCOMPARE(result[2], std::string("b"));
-}
-
-void TestStrings::split_onlyDelimiters() {
-    auto result = mylib::split(",,,", ',');
-    QCOMPARE(result.size(), 4u);
-    for (const auto& s : result) {
-        QCOMPARE(s, std::string(""));
-    }
-}
-
-QTEST_MAIN(TestStrings)
+QTEST_MAIN(TestGcdLcm)
 #include "test_file.moc"

@@ -1,32 +1,23 @@
 #pragma once
-#include <string>
 #include <vector>
+#include <stdexcept>
 
 namespace mylib {
 
-// Возвращает длину строки. Для пустой строки возвращает 0.
-size_t stringLength(const std::string& s);
+// Наибольший общий делитель (алгоритм Евклида).
+// Для отрицательных чисел используется модуль.
+// gcd(0, 0) возвращает 0.
+long long gcd(long long a, long long b);
 
-// Конкатенация двух строк.
-std::string concatenate(const std::string& a, const std::string& b);
+// Наименьшее общее кратное.
+// Вычисляется как (|a| / gcd) * |b| для предотвращения переполнения.
+// Если один из аргументов равен 0, возвращает 0.
+// Бросает std::overflow_error, если результат не помещается в long long.
+long long lcm(long long a, long long b);
 
-// Реверс строки. Для пустой строки возвращает пустую строку.
-std::string reverse(const std::string& s);
-
-// Перевод всех символов в верхний регистр.
-std::string toUpperCase(const std::string& s);
-
-// Перевод всех символов в нижний регистр.
-std::string toLowerCase(const std::string& s);
-
-// Поиск первого вхождения подстроки.
-// Возвращает индекс первого вхождения или -1, если подстрока не найдена.
-// Если подстрока пустая, возвращает 0.
-int findSubstring(const std::string& s, const std::string& sub);
-
-// Разбиение строки по разделителю.
-// Возвращает вектор подстрок. Если строка пустая, возвращает пустой вектор.
-// Несколько разделителей подряд создают пустые строки в результате.
-std::vector<std::string> split(const std::string& s, char delimiter);
+// Разложение числа на простые множители.
+// Возвращает вектор простых множителей в порядке возрастания (с повторениями).
+// Для n <= 1 возвращает пустой вектор. Для отрицательных использует модуль.
+std::vector<long long> primeFactors(long long n);
 
 } // namespace mylib

@@ -1,66 +1,58 @@
 #include "file.h"
-#include <algorithm>
-#include <cctype>
+#include <cmath>
+#include <climits>
 
 namespace mylib {
 
-size_t stringLength(const std::string& s) {
-    return s.length();
-}
-
-std::string concatenate(const std::string& a, const std::string& b) {
-    return a + b;
-}
-
-std::string reverse(const std::string& s) {
-    std::string result = s;
-    std::reverse(result.begin(), result.end());
-    return result;
-}
-
-std::string toUpperCase(const std::string& s) {
-    std::string result = s;
-    std::transform(result.begin(), result.end(), result.begin(),
-                   [](unsigned char c) { return std::toupper(c); });
-    return result;
-}
-
-std::string toLowerCase(const std::string& s) {
-    std::string result = s;
-    std::transform(result.begin(), result.end(), result.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
-    return result;
-}
-
-int findSubstring(const std::string& s, const std::string& sub) {
-    if (sub.empty()) {
-        return 0; // Пустая подстрока найдена в начале
+long long gcd(long long a, long long b) {
+    a = std::abs(a);
+    b = std::abs(b);
+    while (b != 0) {
+        long long t = b;
+        b = a % b;
+        a = t;
     }
-    size_t pos = s.find(sub);
-    if (pos == std::string::npos) {
-        return -1;
-    }
-    return static_cast<int>(pos);
+    return a;
 }
 
-std::vector<std::string> split(const std::string& s, char delimiter) {
-    std::vector<std::string> result;
-    if (s.empty()) {
-        return result; // Пустая строка → пустой вектор
+long long lcm(long long a, long long b) {
+    if (a == 0 || b == 0) {
+        return 0;
+    }
+    a = std::abs(a);
+    b = std::abs(b);
+
+    long long g = gcd(a, b);
+    long long div = a / g;
+
+    // Проверка переполнения перед умножением
+    if (div > LLONG_MAX / b) {
+        throw std::overflow_error("LCM result overflows long long");
     }
 
-    std::string current;
-    for (char c : s) {
-        if (c == delimiter) {
-            result.push_back(current);
-            current.clear();
-        } else {
-            current += c;
+    return div * b;
+}
+
+std::vector<long long> primeFactors(long long n) {
+    std::vector<long long> factors;
+    n = std::abs(n);
+
+    if (n <= 1) {
+        return factors; // Пустой вектор для 0, 1 и -1
+    }
+
+    for (long long i = 2; i * i <= n; ++i) {
+        while (n % i == 0) {
+            factors.push_back(i);
+            n /= i;
         }
     }
-    result.push_back(current); // Добавляем последнюю часть
 
-    return result;
+    if (n > 1) {
+        factors.push_back(n);
+    }
+
+    return factors;
 }
 
 } // namespace mylib
